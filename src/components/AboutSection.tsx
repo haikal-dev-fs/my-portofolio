@@ -171,10 +171,10 @@ const AboutSection = () => {
               
               <div className="space-y-4">
                 {[
-                  { category: 'Management', skills: ['Agile/Scrum', 'Team Leadership', 'Budget Management', 'Risk Assessment'] },
-                  { category: 'Frontend', skills: ['React', 'Next.js', 'TypeScript', 'Tailwind CSS'] },
-                  { category: 'Backend', skills: ['Node.js', 'Python', 'PostgreSQL', 'MongoDB'] },
-                  { category: 'DevOps', skills: ['AWS', 'Docker', 'CI/CD', 'Git'] },
+                   { category: 'Management', skills: ['Agile/Scrum', 'Team Leadership', 'Risk Assessment'] },
+                  { category: 'Frontend', skills: ['React', 'Next.js', 'JavaScript', 'Tailwind CSS', 'Bootstrap CSS', 'HTML'] },
+                  { category: 'Backend', skills: ['PHP', 'Laravel', 'Lumen', 'Swagger', 'Node.js', 'Python', 'PostgreSQL', 'MongoDB', 'MySQL'] },
+                  { category: 'DevOps', skills: ['CI/CD', 'Git'] },
                 ].map((skillGroup, index) => (
                   <motion.div
                     key={skillGroup.category}
