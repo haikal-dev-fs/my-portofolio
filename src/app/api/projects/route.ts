@@ -123,3 +123,104 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export async function PUT(request: NextRequest) {
+  if (!checkAuth(request)) {
+    return NextResponse.json(
+      { success: false, message: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+
+  try {
+    const body = await request.json();
+    const {
+      id,
+      title,
+      description,
+      longDescription,
+      imageUrl,
+      demoUrl,
+      githubUrl,
+      technologies,
+      category,
+      featured
+    } = body;
+
+    const projectIndex = defaultProjects.findIndex(p => p.id === id);
+    if (projectIndex === -1) {
+      return NextResponse.json(
+        { success: false, message: 'Project not found' },
+        { status: 404 }
+      );
+    }
+
+    const updatedProject = {
+      ...defaultProjects[projectIndex],
+      title,
+      description,
+      longDescription,
+      imageUrl,
+      demoUrl,
+      githubUrl,
+      technologies: JSON.stringify(technologies),
+      category,
+      featured: featured || false,
+      updatedAt: Date.now()
+    };
+
+    defaultProjects[projectIndex] = updatedProject;
+
+    return NextResponse.json({
+      success: true,
+      data: updatedProject,
+      message: 'Project updated successfully'
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, message: 'Failed to update project' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  if (!checkAuth(request)) {
+    return NextResponse.json(
+      { success: false, message: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+
+  try {
+    const url = new URL(request.url);
+    const id = url.searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, message: 'Project ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const projectIndex = defaultProjects.findIndex(p => p.id === id);
+    if (projectIndex === -1) {
+      return NextResponse.json(
+        { success: false, message: 'Project not found' },
+        { status: 404 }
+      );
+    }
+
+    defaultProjects.splice(projectIndex, 1);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Project deleted successfully'
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, message: 'Failed to delete project' },
+      { status: 500 }
+    );
+  }
+}

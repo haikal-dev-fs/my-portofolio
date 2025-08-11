@@ -23,12 +23,12 @@ const HeroSection = () => {
     name: "Your Name",
     title: "Project Manager & Fullstack Engineer",
     bio: "Passionate about building innovative solutions and leading successful projects from concept to deployment. Experienced in both technical development and project management.",
-    email: "your.email@example.com",
-    phone: "+1234567890",
+    email: "mhaikalas@gmail.com",
+    phone: "+62 8231 8979 805",
     location: "Jakarta, Indonesia",
-    linkedinUrl: "https://linkedin.com/in/yourprofile",
-    githubUrl: "https://github.com/yourprofile",
-    skills: ["JavaScript", "TypeScript", "React", "Next.js", "Node.js", "Python", "Project Management", "Agile/Scrum"]
+    linkedinUrl: "https://www.linkedin.com/in/haikal-alfandi-61836922a/",
+    githubUrl: "https://github.com/haikal-dev-fs",
+    skills: ["PHP", "Laravel", "JavaScript", "TypeScript", "React", "Next.js", "Node.js", "Python", "Project Management", "Agile/Scrum"]
   });
 
   return (
@@ -127,13 +127,6 @@ const HeroSection = () => {
               Download CV
             </motion.button>
             
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-8 py-4 border border-primary-gold text-primary-gold font-semibold rounded-lg hover:bg-primary-gold hover:text-primary-black transition-colors"
-            >
-              View Projects
-            </motion.button>
           </motion.div>
 
           {/* Social Links */}

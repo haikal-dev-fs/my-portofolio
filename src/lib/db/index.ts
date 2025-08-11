@@ -14,10 +14,10 @@ if (!fs.existsSync(dataDir)) {
 const sqlite = new Database(path.join(dataDir, 'portfolio.db'));
 export const db = drizzle(sqlite, { schema });
 
-// Auto-migrate on startup in development
-if (process.env.NODE_ENV !== 'production') {
+// Auto-migrate on startup in development - disabled for now using dummy data
+if (false && process.env.NODE_ENV !== 'production') {
   try {
-    migrate(db, { migrationsFolder: './lib/db/migrations' });
+    migrate(db, { migrationsFolder: path.join(process.cwd(), 'src', 'lib', 'db', 'migrations') });
   } catch (error) {
     console.log('Migration error (might be normal on first run):', error);
   }

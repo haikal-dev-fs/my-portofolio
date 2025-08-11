@@ -3,27 +3,40 @@
 import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { Menu, X, Home, User, Briefcase, Mail, Settings } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { scrollY } = useScroll();
+  const router = useRouter();
+  const pathname = usePathname();
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     setIsScrolled(latest > 50);
   });
 
   const navItems = [
-    { name: 'Home', href: '#home', icon: Home },
-    { name: 'About', href: '#about', icon: User },
-    { name: 'Projects', href: '#projects', icon: Briefcase },
-    { name: 'Contact', href: '#contact', icon: Mail },
+    { name: 'Home', href: '#home', icon: Home, type: 'scroll' },
+    { name: 'About', href: '#about', icon: User, type: 'scroll' },
+    { name: 'Projects', href: '/projects', icon: Briefcase, type: 'link' },
+    { name: 'Contact', href: '#contact', icon: Mail, type: 'scroll' },
   ];
 
-  const scrollToSection = (href: string) => {
-    const element = document.querySelector(href);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+  const handleNavigation = (item: typeof navItems[0]) => {
+    if (item.type === 'scroll' && pathname === '/') {
+      // If on homepage and it's a scroll link, scroll to section
+      const element = document.querySelector(item.href);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else if (item.type === 'scroll' && pathname !== '/') {
+      // If not on homepage but need to scroll, go home first then scroll
+      router.push('/' + item.href);
+    } else if (item.type === 'link') {
+      // If it's a page link, navigate to page
+      router.push(item.href);
     }
     setIsMenuOpen(false);
   };
@@ -44,17 +57,19 @@ const Navbar = () => {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="flex items-center gap-2"
-            >
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-gold to-primary-dark-gold flex items-center justify-center font-bold text-primary-black">
-                P
-              </div>
-              <span className="text-xl font-display font-bold gradient-gold">
-                Portfolio
-              </span>
-            </motion.div>
+            <Link href="/">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-gold to-primary-dark-gold flex items-center justify-center font-bold text-primary-black">
+                  P
+                </div>
+                <span className="text-xl font-display font-bold gradient-gold">
+                  Portfolio
+                </span>
+              </motion.div>
+            </Link>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-8">
@@ -64,7 +79,7 @@ const Navbar = () => {
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
-                  onClick={() => scrollToSection(item.href)}
+                  onClick={() => handleNavigation(item)}
                   whileHover={{ y: -2 }}
                   whileTap={{ scale: 0.95 }}
                   className="text-gray-300 hover:text-primary-gold transition-colors font-medium"
@@ -74,17 +89,18 @@ const Navbar = () => {
               ))}
               
               {/* Admin Button */}
-              <motion.button
+              <motion.a
+                href="/admin"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="p-2 rounded-lg bg-card hover:bg-primary-gold hover:text-primary-black transition-colors"
+                className="p-2 rounded-lg bg-card hover:bg-primary-gold hover:text-primary-black transition-colors inline-flex items-center justify-center"
                 title="Admin Panel"
               >
                 <Settings className="w-5 h-5" />
-              </motion.button>
+              </motion.a>
             </div>
 
             {/* Mobile Menu Button */}
@@ -123,7 +139,7 @@ const Navbar = () => {
                   x: isMenuOpen ? 0 : 20 
                 }}
                 transition={{ duration: 0.3, delay: index * 0.1 }}
-                onClick={() => scrollToSection(item.href)}
+                onClick={() => handleNavigation(item)}
                 className="flex items-center gap-4 w-full p-4 rounded-lg hover:bg-primary-gold hover:text-primary-black transition-colors text-left"
               >
                 <item.icon className="w-5 h-5" />
@@ -140,10 +156,14 @@ const Navbar = () => {
               transition={{ duration: 0.3, delay: 0.4 }}
               className="pt-4 border-t border-border"
             >
-              <button className="flex items-center gap-4 w-full p-4 rounded-lg hover:bg-primary-gold hover:text-primary-black transition-colors text-left">
+              <a 
+                href="/admin"
+                className="flex items-center gap-4 w-full p-4 rounded-lg hover:bg-primary-gold hover:text-primary-black transition-colors text-left"
+                onClick={() => setIsMenuOpen(false)}
+              >
                 <Settings className="w-5 h-5" />
                 <span className="font-medium">Admin Panel</span>
-              </button>
+              </a>
             </motion.div>
           </div>
         </div>

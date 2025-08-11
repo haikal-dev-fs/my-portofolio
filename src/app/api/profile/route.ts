@@ -14,19 +14,31 @@ export async function GET() {
     const profileData = await db.select().from(profiles).limit(1);
     
     if (profileData.length === 0) {
-      // Return default profile if none exists
+      // Return default profile based on your AboutSection.tsx data
       return NextResponse.json({
         success: true,
         data: {
-          name: "Your Name",
+          name: "Muhammad Haikal",
           title: "Project Manager & Fullstack Engineer",
-          bio: "Passionate about building innovative solutions and leading successful projects from concept to deployment.",
-          email: "your.email@example.com",
-          phone: "+1234567890",
+          bio: "Bridging the gap between technical excellence and project success. I bring both hands-on development skills and strategic project management expertise.",
+          email: "haikal@example.com",
+          phone: "+6285777123456",
           location: "Jakarta, Indonesia",
-          linkedinUrl: "https://linkedin.com/in/yourprofile",
-          githubUrl: "https://github.com/yourprofile",
-          skills: JSON.stringify(["JavaScript", "TypeScript", "React", "Next.js", "Node.js", "Python", "Project Management", "Agile/Scrum"])
+          linkedinUrl: "https://linkedin.com/in/haikal-dev",
+          githubUrl: "https://github.com/haikal-dev-fs",
+          resumeUrl: null, // Will be set when CV is uploaded
+          skills: JSON.stringify({
+            "Management": ["Agile/Scrum", "Team Leadership", "Risk Assessment"],
+            "Frontend": ["React", "Next.js", "JavaScript", "Tailwind CSS", "Bootstrap CSS", "HTML"],
+            "Backend": ["PHP", "Laravel", "Lumen", "Swagger", "Node.js", "Python", "PostgreSQL", "MongoDB", "MySQL"],
+            "DevOps": ["CI/CD", "Git"]
+          }),
+          stats: JSON.stringify([
+            { label: 'Projects Completed', value: '20+' },
+            { label: 'Team Members Led', value: '10+' },
+            { label: 'Years Experience', value: '3+' },
+            { label: 'Technologies Mastered', value: '20+' }
+          ])
         }
       });
     }

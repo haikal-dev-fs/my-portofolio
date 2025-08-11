@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { Github, ExternalLink, Eye } from 'lucide-react';
+import Link from 'next/link';
 import Image from 'next/image';
 
 interface Project {
@@ -19,47 +20,48 @@ interface Project {
 }
 
 const ProjectsSection = () => {
-  const [projects, setProjects] = useState<Project[]>([
-    {
-      id: '1',
-      title: 'E-Commerce Platform',
-      description: 'Full-stack e-commerce solution with admin panel and payment integration',
-      imageUrl: '/api/placeholder/600/400',
-      demoUrl: 'https://demo.example.com',
-      githubUrl: 'https://github.com/example/ecommerce',
-      technologies: ['React', 'Node.js', 'MongoDB', 'Stripe'],
-      category: 'web',
-      featured: true
-    },
-    {
-      id: '2',
-      title: 'Project Management Tool',
-      description: 'Collaborative project management application with real-time features',
-      imageUrl: '/api/placeholder/600/400',
-      demoUrl: 'https://demo.example.com',
-      githubUrl: 'https://github.com/example/projectmgmt',
-      technologies: ['Next.js', 'TypeScript', 'Socket.io', 'PostgreSQL'],
-      category: 'web',
-      featured: true
-    },
-    {
-      id: '3',
-      title: 'Mobile Banking App',
-      description: 'Secure mobile banking application with biometric authentication',
-      imageUrl: '/api/placeholder/600/400',
-      demoUrl: 'https://demo.example.com',
-      technologies: ['React Native', 'Firebase', 'Biometrics API'],
-      category: 'mobile',
-      featured: false
-    }
-  ]);
-
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('all');
-  const categories = ['all', 'web', 'mobile', 'desktop'];
+  const categories = ['all', 'featured', 'web', 'mobile', 'desktop'];
 
-  const filteredProjects = activeCategory === 'all' 
-    ? projects 
-    : projects.filter(project => project.category === activeCategory);
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/projects');
+      const data = await response.json();
+      if (data.success && data.data) {
+        // Parse technologies from JSON string and sort by featured first, then by order
+        const parsedProjects = data.data.map((project: any) => ({
+          ...project,
+          technologies: typeof project.technologies === 'string' 
+            ? JSON.parse(project.technologies) 
+            : project.technologies
+        })).sort((a: any, b: any) => {
+          // Featured projects first, then by order
+          if (a.featured && !b.featured) return -1;
+          if (!a.featured && b.featured) return 1;
+          return (a.order || 0) - (b.order || 0);
+        });
+        
+        setProjects(parsedProjects);
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredProjects = () => {
+    if (activeCategory === 'all') return projects.filter(project => project.featured).slice(0, 6); // Show only featured on homepage
+    if (activeCategory === 'featured') return projects.filter(project => project.featured);
+    return projects.filter(project => project.category === activeCategory);
+  };
 
   return (
     <section className="py-20 px-6">
@@ -119,11 +121,16 @@ const ProjectsSection = () => {
         </motion.div>
 
         {/* Projects Grid */}
-        <motion.div 
-          layout
-          className="grid md:grid-cols-2 xl:grid-cols-3 gap-8"
-        >
-          {filteredProjects.map((project, index) => (
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="text-gray-400">Loading projects...</div>
+          </div>
+        ) : (
+          <motion.div 
+            layout
+            className="grid md:grid-cols-2 xl:grid-cols-3 gap-8"
+          >
+            {filteredProjects().map((project, index) => (
             <motion.div
               key={project.id}
               layout
@@ -233,7 +240,8 @@ const ProjectsSection = () => {
               </div>
             </motion.div>
           ))}
-        </motion.div>
+          </motion.div>
+        )}
 
         {/* View More Button */}
         <motion.div
@@ -243,13 +251,15 @@ const ProjectsSection = () => {
           transition={{ duration: 0.6, delay: 0.5 }}
           className="text-center mt-12"
         >
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="px-8 py-4 border border-primary-gold text-primary-gold font-semibold rounded-lg hover:bg-primary-gold hover:text-primary-black transition-colors"
-          >
-            View All Projects
-          </motion.button>
+          <Link href="/projects">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-8 py-4 border border-primary-gold text-primary-gold font-semibold rounded-lg hover:bg-primary-gold hover:text-primary-black transition-colors"
+            >
+              View All Projects
+            </motion.button>
+          </Link>
         </motion.div>
       </div>
     </section>

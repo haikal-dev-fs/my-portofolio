@@ -37,14 +37,14 @@ const ContactSection = () => {
     {
       icon: Mail,
       label: 'Email',
-      value: 'your.email@example.com',
-      href: 'mailto:your.email@example.com'
+      value: 'mhaikal@gmail.com',
+      href: 'mailto:mhaikal@gmail.com'
     },
     {
       icon: Phone,
       label: 'Phone',
-      value: '+62 812 3456 7890',
-      href: 'tel:+628123456789'
+      value: '+62 8231 8979 805',
+      href: 'tel:+6282318979805'
     },
     {
       icon: MapPin,
@@ -58,12 +58,12 @@ const ContactSection = () => {
     {
       icon: Github,
       label: 'GitHub',
-      href: 'https://github.com/yourprofile'
+      href: 'https://github.com/haikal-dev-fs'
     },
     {
       icon: Linkedin,
       label: 'LinkedIn',
-      href: 'https://linkedin.com/in/yourprofile'
+      href: 'https://www.linkedin.com/in/haikal-alfandi-61836922a/'
     }
   ];
 

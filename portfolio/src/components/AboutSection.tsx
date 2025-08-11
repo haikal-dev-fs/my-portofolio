@@ -19,40 +19,50 @@ const AboutSection = () => {
   const [experiences] = useState<Experience[]>([
     {
       id: '1',
-      company: 'Tech Innovation Corp',
-      position: 'Senior Project Manager',
-      description: 'Led cross-functional teams of 15+ members to deliver enterprise-scale projects. Managed budgets up to $2M and reduced delivery time by 30% through agile methodologies.',
-      startDate: '2022-01',
+      company: 'PT TOWUTI KARYA ABADI',
+      position: 'Project Manager & Fullstack Engineer',
+      description: 'Led cross-functional teams of 5+ members to deliver high-impact projects on time and within budget. Developed FMS systems for mining operations and implemented real-time fleet monitoring.',
+      startDate: '2024-12',
       endDate: undefined,
       location: 'Jakarta, Indonesia',
-      skills: ['Agile', 'Scrum', 'Budget Management', 'Team Leadership']
+      skills: ['Agile', 'Scrum', 'Team Leadership', 'PHP', 'Laravel', 'Lumen', 'Swagger', 'MySQL', 'Vue']
     },
     {
       id: '2',
-      company: 'Digital Solutions Ltd',
-      position: 'Fullstack Developer',
-      description: 'Developed and maintained web applications serving 100K+ users. Built RESTful APIs and responsive frontends using modern tech stack.',
-      startDate: '2020-03',
-      endDate: '2021-12',
-      location: 'Jakarta, Indonesia',
-      skills: ['React', 'Node.js', 'PostgreSQL', 'AWS']
+      company: 'PT POLYTAMA PROPINDO',
+      position: 'Application Developer - Intern',
+      description: "Successfully migrated PT Polytama Propindo's outdated website to a modern platform, significantly improving functionality and user experience and Worked on enhancing the performance and user interface of several websites within the company",
+      startDate: '2023-09',
+      endDate: '2024-02',
+      location: 'Indramayu, Indonesia',
+      skills: ['Laravel', 'PHP', 'Bootstrap', 'PostgreSQL', 'JavaScript']
     },
     {
       id: '3',
-      company: 'StartupX',
-      position: 'Frontend Developer',
-      description: 'Built user interfaces for early-stage fintech startup. Collaborated with design team to create intuitive user experiences.',
-      startDate: '2019-06',
-      endDate: '2020-02',
+      company: 'PT NUSHA DIGITAL SOLUTION',
+      position: 'Front End Engineer',
+      description: 'Developed responsive web applications using Laravel framework for clients and  implemented front-end components using JavaScript, CSS, and Bootstrap, ensuring optimal user experience.',
+      startDate: '2022-08',
+      endDate: '2023-07',
       location: 'Jakarta, Indonesia',
-      skills: ['React', 'TypeScript', 'Tailwind CSS', 'Figma']
+      skills: ['PHP', 'Swagger', 'HTML', 'CSS', 'Mysql', 'Bootstrap', 'JavaScript']
+    },
+    {
+      id: '4',
+      company: 'PT SUCOFINDO',
+      position: 'IT OFFICER - Intern',
+      description: 'Manage IT infrastructure and support services for the organization. Ensure system reliability and security. Data Entry and Management.',
+      startDate: '2019-11',
+      endDate: '2019-08',
+      location: 'Cirebon, Indonesia',
+      skills: ['PHP', 'HTML', 'CSS', 'Mysql']
     }
   ]);
 
   const stats = [
-    { icon: Target, label: 'Projects Completed', value: '50+' },
-    { icon: Users, label: 'Team Members Led', value: '100+' },
-    { icon: Award, label: 'Years Experience', value: '5+' },
+    { icon: Target, label: 'Projects Completed', value: '20+' },
+    { icon: Users, label: 'Team Members Led', value: '10+' },
+    { icon: Award, label: 'Years Experience', value: '3+' },
     { icon: Code, label: 'Technologies Mastered', value: '20+' },
   ];
 
@@ -136,10 +146,10 @@ const AboutSection = () => {
               
               <div className="space-y-4">
                 {[
-                  { category: 'Management', skills: ['Agile/Scrum', 'Team Leadership', 'Budget Management', 'Risk Assessment'] },
-                  { category: 'Frontend', skills: ['React', 'Next.js', 'TypeScript', 'Tailwind CSS'] },
-                  { category: 'Backend', skills: ['Node.js', 'Python', 'PostgreSQL', 'MongoDB'] },
-                  { category: 'DevOps', skills: ['AWS', 'Docker', 'CI/CD', 'Git'] },
+                  { category: 'Management', skills: ['Agile/Scrum', 'Team Leadership', 'Risk Assessment'] },
+                  { category: 'Frontend', skills: ['React', 'Next.js', 'JavaScript', 'Tailwind CSS', 'Bootstrap CSS', 'HTML'] },
+                  { category: 'Backend', skills: ['PHP', 'Laravel', 'Lumen', 'Swagger', 'Node.js', 'Python', 'PostgreSQL', 'MongoDB', 'MySQL'] },
+                  { category: 'DevOps', skills: ['CI/CD', 'Git'] },
                 ].map((skillGroup, index) => (
                   <motion.div
                     key={skillGroup.category}

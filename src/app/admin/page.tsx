@@ -62,7 +62,10 @@ export default function AdminPage() {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth', { method: 'DELETE' });
+      await fetch('/api/auth', { 
+        method: 'DELETE',
+        credentials: 'include'
+      });
       setIsAuthenticated(false);
     } catch (error) {
       console.error('Logout error:', error);
@@ -141,12 +144,6 @@ export default function AdminPage() {
                 )}
               </motion.button>
             </form>
-
-            <div className="mt-8 pt-6 border-t border-border">
-              <p className="text-center text-sm text-gray-400">
-                Hint: The password is <code className="bg-background px-2 py-1 rounded text-primary-gold">adminkal</code>
-              </p>
-            </div>
           </div>
         </motion.div>
       </div>
@@ -486,6 +483,9 @@ function ProfileEditor() {
           </div>
         </div>
 
+        {/* CV Upload Section */}
+        <CVUploadSection />
+
         <motion.button
           type="submit"
           disabled={isLoading}
@@ -500,17 +500,683 @@ function ProfileEditor() {
   );
 }
 
+// CV Upload Component
+function CVUploadSection() {
+  const [currentCV, setCurrentCV] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    // Check if there's an existing CV
+    checkExistingCV();
+  }, []);
+
+  const checkExistingCV = async () => {
+    try {
+      const response = await fetch('/api/profile');
+      const data = await response.json();
+      if (data.success && data.data.resumeUrl) {
+        setCurrentCV(data.data.resumeUrl);
+      }
+    } catch (error) {
+      console.error('Failed to check existing CV:', error);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file
+    if (file.type !== 'application/pdf') {
+      setMessage('Only PDF files are allowed');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) { // 5MB
+      setMessage('File size must be less than 5MB');
+      return;
+    }
+
+    setUploading(true);
+    setMessage('');
+
+    try {
+      const formData = new FormData();
+      formData.append('cv', file);
+
+      const response = await fetch('/api/cv', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setCurrentCV(result.data.url);
+        setMessage('CV uploaded successfully!');
+        
+        // Update profile with new CV URL
+        await updateProfileCV(result.data.url);
+      } else {
+        setMessage(result.message || 'Failed to upload CV');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      setMessage('Failed to upload CV');
+    } finally {
+      setUploading(false);
+      // Reset file input
+      if (event.target) {
+        event.target.value = '';
+      }
+    }
+  };
+
+  const updateProfileCV = async (cvUrl: string) => {
+    try {
+      await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ resumeUrl: cvUrl }),
+      });
+    } catch (error) {
+      console.error('Failed to update profile with CV URL:', error);
+    }
+  };
+
+  const handleDeleteCV = async () => {
+    if (!confirm('Are you sure you want to delete your CV? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/cv', {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setCurrentCV(null);
+        setMessage('CV deleted successfully');
+        
+        // Update profile to remove CV URL
+        await updateProfileCV('');
+      } else {
+        setMessage(result.message || 'Failed to delete CV');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      setMessage('Failed to delete CV');
+    }
+  };
+
+  return (
+    <div className="border-t border-border pt-6 mt-6">
+      <h3 className="text-lg font-semibold text-white mb-4">CV/Resume</h3>
+      
+      {message && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`p-3 rounded-lg mb-4 text-sm ${
+            message.includes('successfully')
+              ? 'bg-green-500/10 border border-green-500/20 text-green-400'
+              : 'bg-red-500/10 border border-red-500/20 text-red-400'
+          }`}
+        >
+          {message}
+        </motion.div>
+      )}
+
+      <div className="space-y-4">
+        {currentCV ? (
+          <div className="bg-background p-4 rounded-lg border border-border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
+                  <span className="text-red-400 text-sm font-mono">PDF</span>
+                </div>
+                <div>
+                  <p className="text-white font-medium">Current CV</p>
+                  <p className="text-gray-400 text-sm">Uploaded PDF file</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={currentCV}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-2 bg-primary-gold/10 text-primary-gold rounded-lg hover:bg-primary-gold/20 transition-colors text-sm"
+                >
+                  View
+                </a>
+                <button
+                  onClick={handleDeleteCV}
+                  className="px-3 py-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors text-sm"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-lg bg-primary-gold/10 flex items-center justify-center">
+              <span className="text-primary-gold text-xl">📄</span>
+            </div>
+            <p className="text-gray-400 mb-4">No CV uploaded yet</p>
+            <label className="cursor-pointer">
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={handleFileUpload}
+                disabled={uploading}
+                className="hidden"
+              />
+              <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                uploading
+                  ? 'bg-gray-500/10 text-gray-500 cursor-not-allowed'
+                  : 'bg-primary-gold text-primary-black hover:bg-primary-dark-gold'
+              }`}>
+                {uploading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-primary-black/30 border-t-primary-black rounded-full animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    📤 Upload CV (PDF only, max 5MB)
+                  </>
+                )}
+              </span>
+            </label>
+          </div>
+        )}
+
+        <div className="text-xs text-gray-500">
+          <p>• Only PDF files are supported</p>
+          <p>• Maximum file size: 5MB</p>
+          <p>• Uploading a new CV will replace the existing one</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Project Manager Component
 function ProjectManager() {
+  const [projects, setProjects] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [editingProject, setEditingProject] = useState<any>(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    longDescription: '',
+    technologies: '',
+    category: 'web',
+    status: 'completed',
+    demoUrl: '',
+    githubUrl: '',
+    imageUrl: '',
+    featured: false
+  });
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const fetchProjects = async () => {
+    try {
+      setIsLoading(true);
+      setError('');
+      const response = await fetch('/api/projects');
+      const data = await response.json();
+      if (data.success && data.data) {
+        setProjects(data.data);
+      } else {
+        setProjects([]);
+        setError(data.message || 'Failed to fetch projects');
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      setProjects([]);
+      setError('Failed to load projects');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const method = editingProject ? 'PUT' : 'POST';
+      const url = editingProject ? '/api/projects' : '/api/projects';
+      
+      const payload = {
+        ...formData,
+        technologies: formData.technologies.split(',').map(t => t.trim()),
+      };
+      
+      if (editingProject) {
+        payload.id = editingProject.id;
+      }
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        fetchProjects();
+        resetForm();
+        setShowForm(false);
+      } else {
+        console.error('Error saving project:', result.message);
+        setError(result.message || 'Failed to save project');
+      }
+    } catch (error) {
+      console.error('Error saving project:', error);
+      setError('Failed to save project');
+    }
+  };
+
+  const handleEdit = (project: any) => {
+    setEditingProject(project);
+    let technologiesStr = '';
+    if (project.technologies) {
+      try {
+        const techArray = JSON.parse(project.technologies);
+        technologiesStr = Array.isArray(techArray) ? techArray.join(', ') : project.technologies;
+      } catch {
+        technologiesStr = project.technologies;
+      }
+    }
+    
+    setFormData({
+      title: project.title || '',
+      description: project.description || '',
+      longDescription: project.longDescription || '',
+      technologies: technologiesStr,
+      category: project.category || 'web',
+      status: project.status || 'completed',
+      demoUrl: project.demoUrl || '',
+      githubUrl: project.githubUrl || '',
+      imageUrl: project.imageUrl || '',
+      featured: project.featured || false
+    });
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Are you sure you want to delete this project?')) {
+      try {
+        const response = await fetch(`/api/projects?id=${id}`, { 
+          method: 'DELETE',
+          credentials: 'include'
+        });
+        if (response.ok) {
+          fetchProjects();
+        }
+      } catch (error) {
+        console.error('Error deleting project:', error);
+      }
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      description: '',
+      longDescription: '',
+      technologies: '',
+      category: 'web',
+      status: 'completed',
+      demoUrl: '',
+      githubUrl: '',
+      imageUrl: '',
+      featured: false
+    });
+    setEditingProject(null);
+    setShowForm(false);
+  };
+
+  const categories = [
+    { value: 'web', label: 'Web Development' },
+    { value: 'mobile', label: 'Mobile App' },
+    { value: 'desktop', label: 'Desktop App' },
+    { value: 'api', label: 'API/Backend' },
+    { value: 'other', label: 'Other' }
+  ];
+
+  const statusOptions = [
+    { value: 'completed', label: 'Completed' },
+    { value: 'in-progress', label: 'In Progress' },
+    { value: 'planned', label: 'Planned' }
+  ];
+
+  if (isLoading) {
+    return (
+      <div className="bg-card p-8 rounded-2xl border border-border">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-gold"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-card p-6 rounded-2xl border border-border">
-      <h2 className="text-2xl font-bold text-white mb-6">Project Management</h2>
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">🚧</div>
-        <h3 className="text-xl font-semibold text-gray-300 mb-2">Coming Soon</h3>
-        <p className="text-gray-400">
-          Project management features will be available in the next update.
-        </p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Project Management</h2>
+          <p className="text-gray-400">Manage your portfolio projects</p>
+        </div>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setShowForm(true)}
+          className="px-6 py-3 bg-primary-gold text-primary-black font-semibold rounded-lg hover:bg-primary-dark-gold transition-colors flex items-center gap-2"
+        >
+          <span className="text-lg">+</span>
+          Add Project
+        </motion.button>
+      </div>
+
+      {/* Project Form */}
+      {showForm && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-card p-6 rounded-2xl border border-border"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-white">
+              {editingProject ? 'Edit Project' : 'Add New Project'}
+            </h3>
+            <button
+              onClick={resetForm}
+              className="text-gray-400 hover:text-white"
+            >
+              ✕
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Title *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="w-full p-3 bg-background border border-border rounded-lg focus:border-primary-gold focus:outline-none text-white"
+                placeholder="Project title"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Category
+              </label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full p-3 bg-background border border-border rounded-lg focus:border-primary-gold focus:outline-none text-white"
+              >
+                {categories.map((cat) => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Short Description *
+              </label>
+              <textarea
+                required
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="w-full p-3 bg-background border border-border rounded-lg focus:border-primary-gold focus:outline-none text-white h-24 resize-none"
+                placeholder="Brief description of the project"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Detailed Description
+              </label>
+              <textarea
+                value={formData.longDescription}
+                onChange={(e) => setFormData({ ...formData, longDescription: e.target.value })}
+                className="w-full p-3 bg-background border border-border rounded-lg focus:border-primary-gold focus:outline-none text-white h-32 resize-none"
+                placeholder="Detailed description, features, challenges, etc."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Technologies *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.technologies}
+                onChange={(e) => setFormData({ ...formData, technologies: e.target.value })}
+                className="w-full p-3 bg-background border border-border rounded-lg focus:border-primary-gold focus:outline-none text-white"
+                placeholder="React, Node.js, MongoDB (comma separated)"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Status
+              </label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                className="w-full p-3 bg-background border border-border rounded-lg focus:border-primary-gold focus:outline-none text-white"
+              >
+                {statusOptions.map((status) => (
+                  <option key={status.value} value={status.value}>
+                    {status.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Demo URL
+              </label>
+              <input
+                type="url"
+                value={formData.demoUrl}
+                onChange={(e) => setFormData({ ...formData, demoUrl: e.target.value })}
+                className="w-full p-3 bg-background border border-border rounded-lg focus:border-primary-gold focus:outline-none text-white"
+                placeholder="https://demo.example.com"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                GitHub URL
+              </label>
+              <input
+                type="url"
+                value={formData.githubUrl}
+                onChange={(e) => setFormData({ ...formData, githubUrl: e.target.value })}
+                className="w-full p-3 bg-background border border-border rounded-lg focus:border-primary-gold focus:outline-none text-white"
+                placeholder="https://github.com/username/repo"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Image URL
+              </label>
+              <input
+                type="url"
+                value={formData.imageUrl}
+                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                className="w-full p-3 bg-background border border-border rounded-lg focus:border-primary-gold focus:outline-none text-white"
+                placeholder="https://example.com/project-image.jpg"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={formData.featured}
+                  onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                  className="w-5 h-5 bg-background border border-border rounded focus:border-primary-gold focus:outline-none"
+                />
+                <span className="text-gray-300">Featured Project</span>
+              </label>
+            </div>
+
+            <div className="md:col-span-2 flex gap-4">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                type="submit"
+                className="px-6 py-3 bg-primary-gold text-primary-black font-semibold rounded-lg hover:bg-primary-dark-gold transition-colors"
+              >
+                {editingProject ? 'Update Project' : 'Create Project'}
+              </motion.button>
+              <button
+                type="button"
+                onClick={resetForm}
+                className="px-6 py-3 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </motion.div>
+      )}
+
+      {/* Projects List */}
+      <div className="bg-card p-6 rounded-2xl border border-border">
+        <h3 className="text-xl font-bold text-white mb-6">
+          Projects ({projects?.length || 0})
+        </h3>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <p className="text-red-400">{error}</p>
+            <button
+              onClick={fetchProjects}
+              className="mt-2 px-4 py-2 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30 transition-colors text-sm"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {!projects || projects.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">📝</div>
+            <h4 className="text-lg font-semibold text-gray-300 mb-2">No Projects Yet</h4>
+            <p className="text-gray-400">Create your first project to get started</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {(projects || []).map((project) => (
+              <motion.div
+                key={project.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-background p-4 rounded-lg border border-border hover:border-primary-gold/50 transition-colors"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h4 className="text-lg font-semibold text-white">{project.title}</h4>
+                      {project.featured && (
+                        <span className="px-2 py-1 bg-primary-gold/20 text-primary-gold text-xs rounded-full">
+                          Featured
+                        </span>
+                      )}
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        project.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                        project.status === 'in-progress' ? 'bg-yellow-500/20 text-yellow-400' :
+                        'bg-gray-500/20 text-gray-400'
+                      }`}>
+                        {project.status}
+                      </span>
+                    </div>
+                    <p className="text-gray-400 text-sm mb-3">{project.description}</p>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {Array.isArray(project.technologies) && project.technologies.map((tech: string, index: number) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 bg-border/50 text-gray-300 text-xs rounded"
+                        >
+                          {tech}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-gray-400">
+                      <span>Category: {project.category}</span>
+                      {project.demoUrl && (
+                        <a
+                          href={project.demoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary-gold hover:underline"
+                        >
+                          Demo
+                        </a>
+                      )}
+                      {project.githubUrl && (
+                        <a
+                          href={project.githubUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary-gold hover:underline"
+                        >
+                          GitHub
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleEdit(project)}
+                      className="px-3 py-2 bg-primary-gold/10 text-primary-gold rounded hover:bg-primary-gold/20 transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(project.id)}
+                      className="px-3 py-2 bg-red-500/10 text-red-400 rounded hover:bg-red-500/20 transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
