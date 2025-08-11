@@ -69,9 +69,8 @@ export async function POST(request: NextRequest) {
       console.log('No existing CV files to remove');
     }
 
-    // Generate unique filename
-    const timestamp = Date.now();
-    const filename = `cv-${timestamp}.pdf`;
+    // Generate consistent filename
+    const filename = 'cv.pdf';
     const filepath = path.join(cvDir, filename);
 
     // Convert file to buffer and save

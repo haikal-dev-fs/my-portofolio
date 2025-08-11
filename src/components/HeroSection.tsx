@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Github, Linkedin, Mail, MapPin, Phone, Download } from 'lucide-react';
 
 interface Profile {
@@ -30,6 +30,66 @@ const HeroSection = () => {
     githubUrl: "https://github.com/haikal-dev-fs",
     skills: ["PHP", "Laravel", "JavaScript", "TypeScript", "React", "Next.js", "Node.js", "Python", "Project Management", "Agile/Scrum"]
   });
+  
+  const [cvUrl, setCvUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchProfile();
+    checkCvAvailability();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const response = await fetch('/api/profile');
+      const data = await response.json();
+      if (data.success && data.data) {
+        const profileData = data.data;
+        setProfile({
+          ...profileData,
+          skills: profileData.skills ? JSON.parse(profileData.skills) : []
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+      // Keep fallback data if API fails
+    }
+  };
+
+  const checkCvAvailability = async () => {
+    try {
+      // First try the API
+      const cvResponse = await fetch('/api/cv/check');
+      if (cvResponse.ok) {
+        const data = await cvResponse.json();
+        if (data.success && data.cvUrl) {
+          setCvUrl(data.cvUrl);
+          return;
+        }
+      }
+      
+      // Fallback: check for standard cv.pdf file
+      const testResponse = await fetch('/uploads/cv/cv.pdf', { method: 'HEAD' });
+      if (testResponse.ok) {
+        setCvUrl('/uploads/cv/cv.pdf');
+      }
+    } catch (error) {
+      console.log('No CV available');
+    }
+  };
+
+  const handleDownloadCV = () => {
+    if (cvUrl) {
+      // Create a temporary anchor element to trigger download
+      const link = document.createElement('a');
+      link.href = cvUrl;
+      link.download = `${profile.name.replace(/\s+/g, '_')}_CV.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      alert('CV not available. Please contact me directly for my resume.');
+    }
+  };
 
   return (
     <section className="min-h-screen flex items-center justify-center px-6 py-20 bg-primary-black">
@@ -121,10 +181,16 @@ const HeroSection = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="px-8 py-4 bg-primary-gold text-primary-black font-semibold rounded-lg hover:bg-primary-dark-gold transition-colors flex items-center gap-2"
+              onClick={handleDownloadCV}
+              className={`px-8 py-4 font-semibold rounded-lg transition-colors flex items-center gap-2 ${
+                cvUrl 
+                  ? 'bg-primary-gold text-primary-black hover:bg-primary-dark-gold' 
+                  : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+              }`}
+              disabled={!cvUrl}
             >
               <Download className="w-5 h-5" />
-              Download CV
+              {cvUrl ? 'Download CV' : 'CV Not Available'}
             </motion.button>
             
           </motion.div>

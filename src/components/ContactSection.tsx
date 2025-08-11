@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Mail, Phone, MapPin, Send, Github, Linkedin } from 'lucide-react';
 
 const ContactSection = () => {
@@ -13,6 +13,36 @@ const ContactSection = () => {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [profile, setProfile] = useState({
+    email: 'mhaikal@gmail.com',
+    phone: '+62 8231 8979 805',
+    location: 'Jakarta, Indonesia',
+    githubUrl: 'https://github.com/haikal-dev-fs',
+    linkedinUrl: 'https://www.linkedin.com/in/haikal-alfandi-61836922a/'
+  });
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const response = await fetch('/api/profile');
+      const data = await response.json();
+      if (data.success && data.data) {
+        setProfile({
+          email: data.data.email || 'mhaikal@gmail.com',
+          phone: data.data.phone || '+62 8231 8979 805',
+          location: data.data.location || 'Jakarta, Indonesia',
+          githubUrl: data.data.githubUrl || 'https://github.com/haikal-dev-fs',
+          linkedinUrl: data.data.linkedinUrl || 'https://www.linkedin.com/in/haikal-alfandi-61836922a/'
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+      // Keep fallback data if API fails
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,20 +67,20 @@ const ContactSection = () => {
     {
       icon: Mail,
       label: 'Email',
-      value: 'mhaikal@gmail.com',
-      href: 'mailto:mhaikal@gmail.com'
+      value: profile.email,
+      href: `mailto:${profile.email}`
     },
     {
       icon: Phone,
       label: 'Phone',
-      value: '+62 8231 8979 805',
-      href: 'tel:+6282318979805'
+      value: profile.phone,
+      href: `tel:${profile.phone.replace(/\s+/g, '')}`
     },
     {
       icon: MapPin,
       label: 'Location',
-      value: 'Jakarta, Indonesia',
-      href: 'https://maps.google.com/?q=Jakarta,Indonesia'
+      value: profile.location,
+      href: `https://maps.google.com/?q=${encodeURIComponent(profile.location)}`
     }
   ];
 
@@ -58,12 +88,12 @@ const ContactSection = () => {
     {
       icon: Github,
       label: 'GitHub',
-      href: 'https://github.com/haikal-dev-fs'
+      href: profile.githubUrl
     },
     {
       icon: Linkedin,
       label: 'LinkedIn',
-      href: 'https://www.linkedin.com/in/haikal-alfandi-61836922a/'
+      href: profile.linkedinUrl
     }
   ];
 

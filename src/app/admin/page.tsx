@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Lock, Eye, EyeOff, LogIn } from 'lucide-react';
 
 export default function AdminPage() {
@@ -1028,15 +1028,10 @@ function ProjectManager() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Image URL
-              </label>
-              <input
-                type="url"
-                value={formData.imageUrl}
-                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                className="w-full p-3 bg-background border border-border rounded-lg focus:border-primary-gold focus:outline-none text-white"
-                placeholder="https://example.com/project-image.jpg"
+              <ProjectImageUpload 
+                projectId={editingProject?.id}
+                currentImageUrl={formData.imageUrl}
+                onImageUploaded={(imageUrl) => setFormData({ ...formData, imageUrl })}
               />
             </div>
 
@@ -1178,6 +1173,186 @@ function ProjectManager() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// Project Image Upload Component
+function ProjectImageUpload({ 
+  projectId, 
+  currentImageUrl, 
+  onImageUploaded 
+}: { 
+  projectId?: string;
+  currentImageUrl: string;
+  onImageUploaded: (imageUrl: string) => void;
+}) {
+  const [isUploading, setIsUploading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFiles = async (files: FileList) => {
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('projectId', projectId || 'temp-' + Date.now());
+
+      const response = await fetch('/api/projects/image', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        onImageUploaded(data.imageUrl);
+      } else {
+        alert(data.message || 'Failed to upload image');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Failed to upload image');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragActive(false);
+    if (e.dataTransfer.files) {
+      handleFiles(e.dataTransfer.files);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragActive(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragActive(false);
+  };
+
+  const removeImage = async () => {
+    if (!projectId) {
+      onImageUploaded('');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/projects/image', {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ projectId }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        onImageUploaded('');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <label className="block text-sm font-medium text-gray-300 mb-2">
+        Project Image
+      </label>
+
+      {currentImageUrl ? (
+        <div className="bg-background p-4 rounded-lg border border-border">
+          <div className="flex items-center gap-4">
+            <div className="flex-shrink-0">
+              <img
+                src={currentImageUrl}
+                alt="Project preview"
+                className="w-20 h-20 object-cover rounded-lg"
+              />
+            </div>
+            <div className="flex-1">
+              <p className="text-white font-medium">Current Image</p>
+              <p className="text-gray-400 text-sm truncate">{currentImageUrl}</p>
+            </div>
+            <button
+              type="button"
+              onClick={removeImage}
+              className="px-3 py-1 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors text-sm"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div
+          className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+            dragActive
+              ? 'border-primary-gold bg-primary-gold/5'
+              : 'border-gray-600 hover:border-primary-gold/50'
+          }`}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={(e) => e.target.files && handleFiles(e.target.files)}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            disabled={isUploading}
+          />
+
+          <div className="space-y-4">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-primary-gold/10 flex items-center justify-center">
+              <span className="text-2xl">🖼️</span>
+            </div>
+
+            <div>
+              <p className="text-white font-medium mb-2">
+                {isUploading ? 'Uploading...' : 'Upload Project Image'}
+              </p>
+              <p className="text-gray-400 text-sm">
+                Drag and drop an image here, or click to select
+              </p>
+              <p className="text-gray-500 text-xs mt-1">
+                Supports JPEG, PNG, WebP (max 5MB)
+              </p>
+            </div>
+
+            {isUploading && (
+              <div className="w-full bg-gray-700 rounded-full h-2">
+                <div className="bg-primary-gold h-2 rounded-full animate-pulse w-1/2"></div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

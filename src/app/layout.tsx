@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "Portfolio - Project Manager & Fullstack Engineer",
   description: "Personal portfolio showcasing projects and experience as a Project Manager and Fullstack Engineer",
   keywords: "project manager, fullstack engineer, portfolio, web development",
-  authors: [{ name: "Your Name" }],
+  authors: [{ name: "Haikal Alfandi" }],
   openGraph: {
     title: "Portfolio - Project Manager & Fullstack Engineer",
     description: "Personal portfolio showcasing projects and experience",
