@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import db from '@/lib/db';
-import { profiles } from '@/lib/db/schema';
+import db from '../../../lib/db';
+import { profiles } from '../../../lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 // Middleware to check admin authentication

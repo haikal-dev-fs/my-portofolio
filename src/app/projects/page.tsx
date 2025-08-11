@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { Github, ExternalLink, Eye, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import Navbar from '@/components/Navbar';
+import Navbar from '../../components/Navbar';
 
 interface Project {
   id: string;
