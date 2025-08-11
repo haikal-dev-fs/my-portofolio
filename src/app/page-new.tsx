@@ -9,24 +9,24 @@ import ContactSection from '@/components/ContactSection';
 
 export default function Home() {
   return (
-    <main className="bg-primary-black text-white">
+    <main className="bg-background text-foreground">
       <Navbar />
       <SmoothScrollContainer>
-        <section id="home" className="min-h-screen">
+        <div id="home">
           <HeroSection />
-        </section>
-        <section id="about" className="min-h-screen py-20">
+        </div>
+        <div id="about">
           <AboutSection />
-        </section>
-        <section id="projects" className="min-h-screen py-20">
+        </div>
+        <div id="projects">
           <ProjectsSection />
-        </section>
-        <section id="contact" className="min-h-screen py-20">
+        </div>
+        <div id="contact">
           <ContactSection />
-        </section>
+        </div>
         
         {/* Footer */}
-        <footer className="border-t border-gray-700 py-12 px-6">
+        <footer className="border-t border-border py-12 px-6">
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="flex items-center gap-3">

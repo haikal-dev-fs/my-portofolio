@@ -1,75 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
-const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+const ADMIN_PASSWORD = 'adminkal';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { password } = body;
-
-    if (!password) {
-      return NextResponse.json(
-        { error: 'Password is required' },
-        { status: 400 }
-      );
-    }
+    const { password } = await request.json();
 
     if (password !== ADMIN_PASSWORD) {
       return NextResponse.json(
-        { error: 'Invalid password' },
+        { success: false, message: 'Invalid password' },
         { status: 401 }
       );
     }
 
-    // Set session cookie
-    const cookieStore = await cookies();
-    const sessionToken = generateSessionToken();
-    const expiresAt = new Date(Date.now() + SESSION_DURATION);
+    // Create a response with a simple token (in production, use proper JWT)
+    const response = NextResponse.json(
+      { success: true, message: 'Authentication successful' },
+      { status: 200 }
+    );
 
-    cookieStore.set('admin-session', sessionToken, {
-      expires: expiresAt,
+    // Set a simple auth cookie
+    response.cookies.set('admin-auth', 'authenticated', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24, // 24 hours
     });
 
-    return NextResponse.json(
-      { message: 'Authentication successful' },
-      { status: 200 }
-    );
+    return response;
   } catch (error) {
-    console.error('Authentication error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { success: false, message: 'Server error' },
       { status: 500 }
     );
   }
 }
 
-export async function DELETE() {
-  try {
-    // Clear session cookie (logout)
-    const cookieStore = await cookies();
-    cookieStore.delete('admin-session');
+export async function DELETE(request: NextRequest) {
+  const response = NextResponse.json(
+    { success: true, message: 'Logged out successfully' },
+    { status: 200 }
+  );
 
-    return NextResponse.json(
-      { message: 'Logged out successfully' },
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error('Logout error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
-}
-
-function generateSessionToken(): string {
-  return Buffer.from(
-    Date.now().toString() + Math.random().toString(36).substring(2)
-  ).toString('base64');
+  response.cookies.delete('admin-auth');
+  
+  return response;
 }
