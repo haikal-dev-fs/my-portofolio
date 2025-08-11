@@ -58,8 +58,8 @@ export async function POST(request: NextRequest) {
 
     // Remove existing CV files
     try {
-      const fs = require('fs');
-      const files = fs.readdirSync(cvDir);
+      const { readdir } = await import('fs/promises');
+      const files = await readdir(cvDir);
       for (const file of files) {
         if (file.endsWith('.pdf')) {
           await unlink(path.join(cvDir, file));
@@ -114,9 +114,9 @@ export async function DELETE(request: NextRequest) {
     const cvDir = path.join(process.cwd(), 'public', 'uploads', 'cv');
     
     // Remove all CV files
-    const fs = require('fs');
+    const { readdir } = await import('fs/promises');
     if (existsSync(cvDir)) {
-      const files = fs.readdirSync(cvDir);
+      const files = await readdir(cvDir);
       for (const file of files) {
         if (file.endsWith('.pdf')) {
           await unlink(path.join(cvDir, file));

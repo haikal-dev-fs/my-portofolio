@@ -28,7 +28,7 @@ const AboutSection = () => {
       const response = await fetch('/api/experiences');
       const data = await response.json();
       if (data.success && data.data) {
-        const parsedExperiences = data.data.map((exp: any) => ({
+        const parsedExperiences = data.data.map((exp: Experience) => ({
           ...exp,
           skills: typeof exp.skills === 'string' ? JSON.parse(exp.skills) : exp.skills
         }));

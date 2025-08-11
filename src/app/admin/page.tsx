@@ -759,7 +759,7 @@ function ProjectManager() {
       const method = editingProject ? 'PUT' : 'POST';
       const url = editingProject ? '/api/projects' : '/api/projects';
       
-      const payload: any = {
+      const payload: Record<string, any> = {
         ...formData,
         technologies: formData.technologies.split(',').map(t => t.trim()),
       };
