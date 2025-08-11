@@ -7,6 +7,17 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  images: {
+    domains: ['localhost'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      }
+    ]
+  },
+  // Enable static file serving
+  trailingSlash: false,
 };
 
 export default nextConfig;
