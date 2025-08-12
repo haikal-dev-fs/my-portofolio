@@ -32,7 +32,7 @@ const defaultProjects: Project[] = [
     longDescription: 'A comprehensive fleet management system for mining operations with real-time monitoring and reporting capabilities.',
     imageUrl: '',
     technologies: ['PHP', 'Laravel', 'MySQL', 'Vue.js', 'Bootstrap'],
-    liveUrl: '', // FIX: Changed from demoUrl to liveUrl
+    liveUrl: '', // Required field
     githubUrl: '',
     category: 'Full Stack',
     featured: true,
@@ -113,21 +113,21 @@ export async function POST(request: NextRequest) {
       description,
       longDescription,
       imageUrl,
-      liveUrl, // FIX: Changed from demoUrl to liveUrl
+      liveUrl,
       githubUrl,
       technologies,
       category,
       featured
     } = body;
 
-    // FIX: Create project with consistent structure
+    // FIX: Create project with consistent structure that matches interface
     const newProject: Project = {
-      id: `project_${Math.random().toString(36).substr(2, 9)}`, // Better ID generation
+      id: `project_${Math.random().toString(36).substr(2, 9)}`,
       title: title || '',
       description: description || '',
       longDescription: longDescription || description || '',
       imageUrl: imageUrl || '',
-      liveUrl: liveUrl || '', // FIX: Use liveUrl instead of demoUrl
+      liveUrl: liveUrl || '', // Required field - must be present
       githubUrl: githubUrl || '',
       technologies: Array.isArray(technologies) ? technologies : [],
       category: category || 'Other',
@@ -170,7 +170,7 @@ export async function PUT(request: NextRequest) {
       description,
       longDescription,
       imageUrl,
-      liveUrl, // FIX: Changed from demoUrl to liveUrl
+      liveUrl,
       githubUrl,
       technologies,
       category,
@@ -185,14 +185,14 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // FIX: Update project with consistent structure
+    // FIX: Update project with consistent structure that matches interface
     const updatedProject: Project = {
       ...defaultProjects[projectIndex],
       title: title || defaultProjects[projectIndex].title,
       description: description || defaultProjects[projectIndex].description,
       longDescription: longDescription || defaultProjects[projectIndex].longDescription || '',
       imageUrl: imageUrl || defaultProjects[projectIndex].imageUrl || '',
-      liveUrl: liveUrl || defaultProjects[projectIndex].liveUrl,
+      liveUrl: liveUrl || defaultProjects[projectIndex].liveUrl, // Required field
       githubUrl: githubUrl || defaultProjects[projectIndex].githubUrl,
       technologies: Array.isArray(technologies) ? technologies : defaultProjects[projectIndex].technologies,
       category: category || defaultProjects[projectIndex].category || 'Other',
