@@ -1,21 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Dummy data based on your AboutSection.tsx updates
-type Experience = {
-	id: string;
-	company: string;
-	position: string;
-	description: string;
-	startDate: string;
-	endDate: string | null;
-	location: string;
-	skills: string[] | string;
-	order: number;
-	createdAt: string;
-	updatedAt: string;
-};
-
-const defaultExperiences: Experience[] = [
+const defaultExperiences = [
 	{
 		id: '1',
 		company: 'PT TOWUTI KARYA ABADI',
@@ -35,7 +21,7 @@ const defaultExperiences: Experience[] = [
 			'Swagger',
 			'MySQL',
 			'Vue',
-		], // FIX: Keep as array, not JSON string
+		], // Always array
 		order: 0,
 		createdAt: '2024-12-01T00:00:00.000Z',
 		updatedAt: '2024-12-01T00:00:00.000Z',
@@ -49,7 +35,7 @@ const defaultExperiences: Experience[] = [
 		startDate: '2023-09-01',
 		endDate: '2024-02-01',
 		location: 'Indramayu, Indonesia',
-		skills: ['Laravel', 'PHP', 'Bootstrap', 'PostgreSQL', 'JavaScript'], // FIX: Keep as array
+		skills: ['Laravel', 'PHP', 'Bootstrap', 'PostgreSQL', 'JavaScript'], // Always array
 		order: 1,
 		createdAt: '2023-09-01T00:00:00.000Z',
 		updatedAt: '2024-02-01T00:00:00.000Z',
@@ -63,15 +49,7 @@ const defaultExperiences: Experience[] = [
 		startDate: '2022-08-01',
 		endDate: '2023-07-01',
 		location: 'Jakarta, Indonesia',
-		skills: [
-			'PHP',
-			'Swagger',
-			'HTML',
-			'CSS',
-			'Mysql',
-			'Bootstrap',
-			'JavaScript',
-		], // FIX: Keep as array
+		skills: ['PHP', 'Swagger', 'HTML', 'CSS', 'Mysql', 'Bootstrap', 'JavaScript'], // Always array
 		order: 2,
 		createdAt: '2022-08-01T00:00:00.000Z',
 		updatedAt: '2023-07-01T00:00:00.000Z',
@@ -85,7 +63,7 @@ const defaultExperiences: Experience[] = [
 		startDate: '2019-08-01',
 		endDate: '2019-11-01',
 		location: 'Cirebon, Indonesia',
-		skills: ['PHP', 'HTML', 'CSS', 'Mysql'], // FIX: Keep as array
+		skills: ['PHP', 'HTML', 'CSS', 'Mysql'], // Always array
 		order: 3,
 		createdAt: '2019-08-01T00:00:00.000Z',
 		updatedAt: '2019-11-01T00:00:00.000Z',
@@ -94,45 +72,37 @@ const defaultExperiences: Experience[] = [
 
 export async function GET() {
 	try {
-		// FIX: Proper skills processing with correct logic
+		// FIX: Simplify - since defaultExperiences already has arrays, just return them
 		const processedExperiences = defaultExperiences.map((exp) => {
-			let processedSkills = [];
-
-			if (Array.isArray(exp.skills)) {
-				processedSkills = exp.skills;
-			} else if (typeof exp.skills === 'string') {
-				try {
-					if (exp.skills.startsWith('[')) {
-						processedSkills = JSON.parse(exp.skills);
-					} else {
-						processedSkills = [exp.skills];
-					}
-				} catch (error) {
-					console.error('Failed to parse skills:', exp.skills);
-					processedSkills = [];
-				}
-			} else {
-				processedSkills = [];
-			}
+			// Simple processing - ensure skills is always an array
+			const processedSkills = Array.isArray(exp.skills) ? exp.skills : [];
 
 			return {
-				...exp,
-				skills: Array.isArray(processedSkills) ? processedSkills : [],
+				id: exp.id,
+				company: exp.company,
+				position: exp.position,
+				description: exp.description,
+				startDate: exp.startDate,
+				endDate: exp.endDate,
+				location: exp.location,
+				skills: processedSkills, // Already guaranteed to be array
+				order: exp.order,
+				createdAt: exp.createdAt,
+				updatedAt: exp.updatedAt,
 			};
 		});
 
 		return NextResponse.json({
 			success: true,
-			data: Array.isArray(processedExperiences) ? processedExperiences : [],
+			data: processedExperiences,
 		});
 	} catch (error) {
 		console.error('Error fetching experiences:', error);
-		// Return empty array on error
 		return NextResponse.json(
 			{
 				success: false,
 				message: 'Failed to fetch experiences',
-				data: [], // Always provide empty array as fallback
+				data: [],
 			},
 			{ status: 500 }
 		);

@@ -345,30 +345,53 @@ const AboutSection = () => {
                     
                     <div className="flex flex-wrap gap-2">
                       {(() => {
-                        const skills = exp.skills;
-                        if (!skills) return null;
-                        
-                        let skillsArray = [];
-                        if (Array.isArray(skills)) {
-                          skillsArray = skills;
-                        } else if (typeof skills === 'string') {
-                          try {
-                            skillsArray = JSON.parse(skills);
-                          } catch {
-                            skillsArray = [skills];
+                        // Ultra-safe skills handling
+                        try {
+                          const skills = exp?.skills;
+                          
+                          if (!skills) return null;
+                          
+                          if (Array.isArray(skills)) {
+                            return skills.map((skill, skillIndex) => {
+                              if (typeof skill !== 'string' || skill.trim() === '') return null;
+                              return (
+                                <span
+                                  key={`${skill}-${skillIndex}-${exp.id}`}
+                                  className="px-3 py-1 text-sm bg-primary-gold/10 text-primary-gold rounded-full border border-primary-gold/20"
+                                >
+                                  {skill}
+                                </span>
+                              );
+                            }).filter(Boolean);
                           }
-                        } else {
-                          skillsArray = [];
+                          
+                          if (typeof skills === 'string') {
+                            try {
+                              const parsed = JSON.parse(skills);
+                              if (Array.isArray(parsed)) {
+                                return parsed.map((skill, skillIndex) => (
+                                  <span
+                                    key={`${skill}-${skillIndex}-${exp.id}`}
+                                    className="px-3 py-1 text-sm bg-primary-gold/10 text-primary-gold rounded-full border border-primary-gold/20"
+                                  >
+                                    {skill}
+                                  </span>
+                                ));
+                              }
+                            } catch {
+                              return (
+                                <span className="px-3 py-1 text-sm bg-primary-gold/10 text-primary-gold rounded-full border border-primary-gold/20">
+                                  {skills}
+                                </span>
+                              );
+                            }
+                          }
+                          
+                          return null;
+                        } catch (error) {
+                          console.error('Skills render error:', error);
+                          return null;
                         }
-                        
-                        return Array.isArray(skillsArray) ? skillsArray.map((skill, skillIndex) => (
-                          <span
-                            key={`${skill}-${skillIndex}`}
-                            className="px-3 py-1 text-sm bg-primary-gold/10 text-primary-gold rounded-full border border-primary-gold/20"
-                          >
-                            {skill}
-                          </span>
-                        )) : null;
                       })()}
                     </div>
                   </motion.div>
