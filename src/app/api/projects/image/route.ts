@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, unlink, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import path from 'path';
+import db from '../../../../lib/db';
+import { projects } from '../../../../lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 // Middleware to check admin authentication
 function checkAuth(request: NextRequest) {
@@ -45,57 +45,47 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate file size (max 2MB for base64 storage)
+    if (file.size > 2 * 1024 * 1024) {
       return NextResponse.json(
-        { success: false, message: 'File size must be less than 5MB' },
+        { success: false, message: 'File size must be less than 2MB' },
         { status: 400 }
       );
     }
 
+    // Convert file to base64
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const base64String = buffer.toString('base64');
+    const dataUrl = `data:${file.type};base64,${base64String}`;
 
-    // Create uploads directory
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'projects');
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
+    // Update project with base64 image
+    const updatedProject = await db
+      .update(projects)
+      .set({ 
+        imageUrl: dataUrl,
+        updatedAt: Date.now()
+      })
+      .where(eq(projects.id, projectId))
+      .returning();
+
+    if (updatedProject.length === 0) {
+      return NextResponse.json(
+        { success: false, message: 'Project not found' },
+        { status: 404 }
+      );
     }
-
-    // Remove existing image for this project
-    try {
-      const { readdir } = await import('fs/promises');
-      const files = await readdir(uploadsDir);
-      for (const existingFile of files) {
-        if (existingFile.startsWith(`${projectId}.`)) {
-          await unlink(path.join(uploadsDir, existingFile));
-        }
-      }
-    } catch (error) {
-      console.log('No existing project images to remove');
-    }
-
-    // Get file extension
-    const extension = file.name.split('.').pop() || 'jpg';
-    const filename = `${projectId}.${extension}`;
-    const filepath = path.join(uploadsDir, filename);
-
-    // Save file
-    await writeFile(filepath, buffer);
-
-    // Return the public URL
-    const imageUrl = `/uploads/projects/${filename}`;
 
     return NextResponse.json({
       success: true,
       message: 'Image uploaded successfully',
-      imageUrl
+      imageUrl: dataUrl
     });
 
   } catch (error) {
     console.error('Error uploading image:', error);
     return NextResponse.json(
-      { success: false, message: 'Failed to upload image' },
+      { success: false, message: 'Failed to upload image', error: String(error) },
       { status: 500 }
     );
   }
@@ -119,17 +109,21 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'projects');
-    
-    // Remove all images for this project
-    const { readdir } = await import('fs/promises');
-    if (existsSync(uploadsDir)) {
-      const files = await readdir(uploadsDir);
-      for (const file of files) {
-        if (file.startsWith(`${projectId}.`)) {
-          await unlink(path.join(uploadsDir, file));
-        }
-      }
+    // Remove image from project (set imageUrl to null)
+    const updatedProject = await db
+      .update(projects)
+      .set({ 
+        imageUrl: null,
+        updatedAt: Date.now()
+      })
+      .where(eq(projects.id, projectId))
+      .returning();
+
+    if (updatedProject.length === 0) {
+      return NextResponse.json(
+        { success: false, message: 'Project not found' },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json({
@@ -140,7 +134,7 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error('Error deleting image:', error);
     return NextResponse.json(
-      { success: false, message: 'Failed to delete image' },
+      { success: false, message: 'Failed to delete image', error: String(error) },
       { status: 500 }
     );
   }

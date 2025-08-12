@@ -48,8 +48,9 @@ export async function GET() {
       data: profileData[0]
     });
   } catch (error) {
+    console.error('Database error:', error);
     return NextResponse.json(
-      { success: false, message: 'Failed to fetch profile' },
+      { success: false, message: 'Failed to fetch profile', error: String(error) },
       { status: 500 }
     );
   }
@@ -85,17 +86,17 @@ export async function PUT(request: NextRequest) {
     if (existingProfile.length === 0) {
       // Create new profile
       const newProfile = await db.insert(profiles).values({
-        name,
-        title,
-        bio,
-        email,
-        phone,
-        location,
-        linkedinUrl,
-        githubUrl,
+        name: name || "Muhammad Haikal",
+        title: title || "Project Manager & Fullstack Engineer",
+        bio: bio || "Bridging the gap between technical excellence and project success.",
+        email: email || "haikal@example.com",
+        phone: phone || "+6285777123456",
+        location: location || "Jakarta, Indonesia",
+        linkedinUrl: linkedinUrl || "https://linkedin.com/in/haikal-dev",
+        githubUrl: githubUrl || "https://github.com/haikal-dev-fs",
         resumeUrl,
         avatarUrl,
-        skills: JSON.stringify(skills),
+        skills: typeof skills === 'string' ? skills : JSON.stringify(skills || {}),
         updatedAt: Date.now()
       }).returning();
 
@@ -106,22 +107,25 @@ export async function PUT(request: NextRequest) {
       });
     } else {
       // Update existing profile
+      const updateData: any = {
+        updatedAt: Date.now()
+      };
+
+      if (name !== undefined) updateData.name = name;
+      if (title !== undefined) updateData.title = title;
+      if (bio !== undefined) updateData.bio = bio;
+      if (email !== undefined) updateData.email = email;
+      if (phone !== undefined) updateData.phone = phone;
+      if (location !== undefined) updateData.location = location;
+      if (linkedinUrl !== undefined) updateData.linkedinUrl = linkedinUrl;
+      if (githubUrl !== undefined) updateData.githubUrl = githubUrl;
+      if (resumeUrl !== undefined) updateData.resumeUrl = resumeUrl;
+      if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl;
+      if (skills !== undefined) updateData.skills = typeof skills === 'string' ? skills : JSON.stringify(skills);
+
       const updatedProfile = await db
         .update(profiles)
-        .set({
-          name,
-          title,
-          bio,
-          email,
-          phone,
-          location,
-          linkedinUrl,
-          githubUrl,
-          resumeUrl,
-          avatarUrl,
-          skills: JSON.stringify(skills),
-          updatedAt: Date.now()
-        })
+        .set(updateData)
         .where(eq(profiles.id, existingProfile[0].id))
         .returning();
 
@@ -132,8 +136,9 @@ export async function PUT(request: NextRequest) {
       });
     }
   } catch (error) {
+    console.error('Profile update error:', error);
     return NextResponse.json(
-      { success: false, message: 'Failed to update profile' },
+      { success: false, message: 'Failed to update profile', error: String(error) },
       { status: 500 }
     );
   }

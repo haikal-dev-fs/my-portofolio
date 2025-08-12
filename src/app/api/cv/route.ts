@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, unlink, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import path from 'path';
+import db from '../../../lib/db';
+import { profiles } from '../../../lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 // Middleware to check admin authentication
 function checkAuth(request: NextRequest) {
@@ -36,66 +36,111 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate file size (max 3MB for base64 storage)
+    if (file.size > 3 * 1024 * 1024) {
       return NextResponse.json(
-        { success: false, message: 'File size must be less than 5MB' },
+        { success: false, message: 'File size must be less than 3MB' },
         { status: 400 }
       );
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
-    }
-
-    // Remove old CV files
-    const cvDir = path.join(uploadsDir, 'cv');
-    if (!existsSync(cvDir)) {
-      await mkdir(cvDir, { recursive: true });
-    }
-
-    // Remove existing CV files
-    try {
-      const { readdir } = await import('fs/promises');
-      const files = await readdir(cvDir);
-      for (const file of files) {
-        if (file.endsWith('.pdf')) {
-          await unlink(path.join(cvDir, file));
-        }
-      }
-    } catch (error) {
-      console.log('No existing CV files to remove');
-    }
-
-    // Generate consistent filename
-    const filename = 'cv.pdf';
-    const filepath = path.join(cvDir, filename);
-
-    // Convert file to buffer and save
+    // Convert PDF to base64
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    await writeFile(filepath, buffer);
+    const base64String = buffer.toString('base64');
+    const dataUrl = `data:application/pdf;base64,${base64String}`;
 
-    // Return public URL
-    const publicUrl = `/uploads/cv/${filename}`;
+    // Get or create profile
+    const existingProfile = await db.select().from(profiles).limit(1);
+    
+    if (existingProfile.length === 0) {
+      // Create new profile with CV
+      const newProfile = await db.insert(profiles).values({
+        name: "Muhammad Haikal",
+        title: "Project Manager & Fullstack Engineer",
+        bio: "Bridging the gap between technical excellence and project success.",
+        email: "haikal@example.com",
+        phone: "+6285777123456",
+        location: "Jakarta, Indonesia",
+        linkedinUrl: "https://linkedin.com/in/haikal-dev",
+        githubUrl: "https://github.com/haikal-dev-fs",
+        resumeUrl: dataUrl,
+        skills: JSON.stringify({
+          "Management": ["Agile/Scrum", "Team Leadership", "Risk Assessment"],
+          "Frontend": ["React", "Next.js", "JavaScript", "Tailwind CSS", "Bootstrap CSS", "HTML"],
+          "Backend": ["PHP", "Laravel", "Lumen", "Swagger", "Node.js", "Python", "PostgreSQL", "MongoDB", "MySQL"],
+          "DevOps": ["CI/CD", "Git"]
+        }),
+        updatedAt: Date.now()
+      }).returning();
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        filename,
-        url: publicUrl,
-        size: file.size,
-        uploadedAt: new Date().toISOString()
-      },
-      message: 'CV uploaded successfully'
-    });
+      return NextResponse.json({
+        success: true,
+        message: 'CV uploaded successfully',
+        data: newProfile[0]
+      });
+    } else {
+      // Update existing profile with CV
+      const updatedProfile = await db
+        .update(profiles)
+        .set({
+          resumeUrl: dataUrl,
+          updatedAt: Date.now()
+        })
+        .where(eq(profiles.id, existingProfile[0].id))
+        .returning();
+
+      return NextResponse.json({
+        success: true,
+        message: 'CV updated successfully',
+        data: updatedProfile[0]
+      });
+    }
 
   } catch (error) {
     console.error('Error uploading CV:', error);
     return NextResponse.json(
-      { success: false, message: 'Failed to upload CV' },
+      { success: false, message: 'Failed to upload CV', error: String(error) },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET() {
+  try {
+    const profile = await db.select().from(profiles).limit(1);
+    
+    if (profile.length === 0 || !profile[0].resumeUrl) {
+      return NextResponse.json(
+        { success: false, message: 'CV not found' },
+        { status: 404 }
+      );
+    }
+
+    // Extract base64 data from data URL
+    const resumeUrl = profile[0].resumeUrl;
+    if (!resumeUrl.startsWith('data:application/pdf;base64,')) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid CV format' },
+        { status: 400 }
+      );
+    }
+
+    const base64Data = resumeUrl.split(',')[1];
+    const buffer = Buffer.from(base64Data, 'base64');
+
+    return new NextResponse(buffer, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': 'inline; filename="CV-Muhammad-Haikal.pdf"',
+        'Content-Length': buffer.length.toString()
+      }
+    });
+
+  } catch (error) {
+    console.error('Error downloading CV:', error);
+    return NextResponse.json(
+      { success: false, message: 'Failed to download CV', error: String(error) },
       { status: 500 }
     );
   }
@@ -110,18 +155,23 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-    const cvDir = path.join(process.cwd(), 'public', 'uploads', 'cv');
+    const profile = await db.select().from(profiles).limit(1);
     
-    // Remove all CV files
-    const { readdir } = await import('fs/promises');
-    if (existsSync(cvDir)) {
-      const files = await readdir(cvDir);
-      for (const file of files) {
-        if (file.endsWith('.pdf')) {
-          await unlink(path.join(cvDir, file));
-        }
-      }
+    if (profile.length === 0) {
+      return NextResponse.json(
+        { success: false, message: 'Profile not found' },
+        { status: 404 }
+      );
     }
+
+    // Remove CV from profile
+    await db
+      .update(profiles)
+      .set({
+        resumeUrl: null,
+        updatedAt: Date.now()
+      })
+      .where(eq(profiles.id, profile[0].id));
 
     return NextResponse.json({
       success: true,
@@ -131,7 +181,7 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error('Error deleting CV:', error);
     return NextResponse.json(
-      { success: false, message: 'Failed to delete CV' },
+      { success: false, message: 'Failed to delete CV', error: String(error) },
       { status: 500 }
     );
   }
