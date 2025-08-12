@@ -1,26 +1,26 @@
-import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import Database from 'better-sqlite3';
 import * as schema from './schema';
-import path from 'path';
-import fs from 'fs';
 
-// Ensure data directory exists
-const dataDir = path.join(process.cwd(), 'data');
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-}
+let db: ReturnType<typeof drizzle>;
 
-const sqlite = new Database(path.join(dataDir, 'portfolio.db'));
-export const db = drizzle(sqlite, { schema });
-
-// Auto-migrate on startup in development - disabled for now using dummy data
-if (false && process.env.NODE_ENV !== 'production') {
-  try {
-    migrate(db, { migrationsFolder: path.join(process.cwd(), 'src', 'lib', 'db', 'migrations') });
-  } catch (error) {
-    console.log('Migration error (might be normal on first run):', error);
+try {
+  if (process.env.NODE_ENV === 'production') {
+    // For Vercel production, use memory database as fallback
+    console.log('Using memory database for production');
+    const sqlite = new Database(':memory:');
+    db = drizzle(sqlite, { schema });
+  } else {
+    // For development
+    console.log('Using file database for development');
+    const sqlite = new Database('./data/portfolio.db');
+    db = drizzle(sqlite, { schema });
   }
+} catch (error) {
+  console.error('Database initialization error:', error);
+  // Fallback to memory database
+  const sqlite = new Database(':memory:');
+  db = drizzle(sqlite, { schema });
 }
 
 export default db;
