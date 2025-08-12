@@ -344,14 +344,32 @@ const AboutSection = () => {
                     </p>
                     
                     <div className="flex flex-wrap gap-2">
-                      {(Array.isArray(exp.skills) ? exp.skills : []).map((skill, skillIndex) => (
-                        <span
-                          key={`${skill}-${skillIndex}`}
-                          className="px-3 py-1 text-sm bg-primary-gold/10 text-primary-gold rounded-full border border-primary-gold/20"
-                        >
-                          {skill}
-                        </span>
-                      ))}
+                      {(() => {
+                        const skills = exp.skills;
+                        if (!skills) return null;
+                        
+                        let skillsArray = [];
+                        if (Array.isArray(skills)) {
+                          skillsArray = skills;
+                        } else if (typeof skills === 'string') {
+                          try {
+                            skillsArray = JSON.parse(skills);
+                          } catch {
+                            skillsArray = [skills];
+                          }
+                        } else {
+                          skillsArray = [];
+                        }
+                        
+                        return Array.isArray(skillsArray) ? skillsArray.map((skill, skillIndex) => (
+                          <span
+                            key={`${skill}-${skillIndex}`}
+                            className="px-3 py-1 text-sm bg-primary-gold/10 text-primary-gold rounded-full border border-primary-gold/20"
+                          >
+                            {skill}
+                          </span>
+                        )) : null;
+                      })()}
                     </div>
                   </motion.div>
                 </motion.div>
