@@ -35,7 +35,7 @@ const HeroSection = () => {
 
   useEffect(() => {
     fetchProfile();
-    checkCvAvailability();
+    checkCV();
   }, []);
 
   const fetchProfile = async () => {
@@ -55,22 +55,22 @@ const HeroSection = () => {
     }
   };
 
-  const checkCvAvailability = async () => {
+  // Update the CV checking logic
+  const checkCV = async () => {
     try {
-      // First try the API
-      const cvResponse = await fetch('/api/cv/check');
-      if (cvResponse.ok) {
-        const data = await cvResponse.json();
-        if (data.success && data.cvUrl) {
-          setCvUrl(data.cvUrl);
-          return;
-        }
+      // Try database first
+      const response = await fetch('/api/cv/check');
+      const data = await response.json();
+      if (data.success && data.cvUrl) {
+        setCvUrl(data.cvUrl);
+        return;
       }
       
-      // Fallback: check for standard cv.pdf file
-      const testResponse = await fetch('/uploads/cv/cv.pdf', { method: 'HEAD' });
-      if (testResponse.ok) {
-        setCvUrl('/uploads/cv/cv.pdf');
+      // Try direct API endpoint
+      const cvResponse = await fetch('/api/cv');
+      if (cvResponse.ok) {
+        setCvUrl('/api/cv'); // Use API endpoint as download URL
+        return;
       }
     } catch (error) {
       console.log('No CV available');
@@ -79,13 +79,18 @@ const HeroSection = () => {
 
   const handleDownloadCV = () => {
     if (cvUrl) {
-      // Create a temporary anchor element to trigger download
-      const link = document.createElement('a');
-      link.href = cvUrl;
-      link.download = `${profile.name.replace(/\s+/g, '_')}_CV.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      if (cvUrl.startsWith('/api/')) {
+        // If it's an API endpoint, open in new tab
+        window.open(cvUrl, '_blank');
+      } else {
+        // If it's a file path, use download link
+        const link = document.createElement('a');
+        link.href = cvUrl;
+        link.download = `${profile.name.replace(/\s+/g, '_')}_CV.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     } else {
       alert('CV not available. Please contact me directly for my resume.');
     }

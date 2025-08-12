@@ -18,71 +18,87 @@ interface Experience {
 const AboutSection = () => {
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  // Fallback data - make sure it's always available
+  const fallbackExperiences: Experience[] = [
+    {
+      id: '1',
+      company: 'PT TOWUTI KARYA ABADI',
+      position: 'Project Manager & Fullstack Engineer',
+      description: 'Led cross-functional teams of 5+ members to deliver high-impact projects on time and within budget. Developed FMS systems for mining operations and implemented real-time fleet monitoring.',
+      startDate: '2024-12',
+      endDate: undefined,
+      location: 'Jakarta, Indonesia',
+      skills: ['Agile', 'Scrum', 'Team Leadership', 'PHP', 'Laravel', 'Lumen', 'Swagger', 'MySQL', 'Vue']
+    },
+    {
+      id: '2',
+      company: 'PT POLYTAMA PROPINDO',
+      position: 'Application Developer - Intern',
+      description: "Successfully migrated PT Polytama Propindo's outdated website to a modern platform, significantly improving functionality and user experience and Worked on enhancing the performance and user interface of several websites within the company",
+      startDate: '2023-09',
+      endDate: '2024-02',
+      location: 'Indramayu, Indonesia',
+      skills: ['Laravel', 'PHP', 'Bootstrap', 'PostgreSQL', 'JavaScript']
+    },
+    {
+      id: '3',
+      company: 'PT NUSHA DIGITAL SOLUTION',
+      position: 'Front End Engineer',
+      description: 'Developed responsive web applications using Laravel framework for clients and implemented front-end components using JavaScript, CSS, and Bootstrap, ensuring optimal user experience.',
+      startDate: '2022-08',
+      endDate: '2023-07',
+      location: 'Jakarta, Indonesia',
+      skills: ['PHP', 'Swagger', 'HTML', 'CSS', 'Mysql', 'Bootstrap', 'JavaScript']
+    },
+    {
+      id: '4',
+      company: 'PT SUCOFINDO',
+      position: 'IT OFFICER - Intern',
+      description: 'Manage IT infrastructure and support services for the organization. Ensure system reliability and security. Data Entry and Management.',
+      startDate: '2019-08',
+      endDate: '2019-11',
+      location: 'Cirebon, Indonesia',
+      skills: ['PHP', 'HTML', 'CSS', 'Mysql']
+    }
+  ];
 
   useEffect(() => {
+    setMounted(true);
+    // Use fallback data initially to prevent hydration mismatch
+    setExperiences(fallbackExperiences);
+    setLoading(false);
+    
+    // Then fetch from API in the background
     fetchExperiences();
   }, []);
 
   const fetchExperiences = async () => {
     try {
-      const response = await fetch('/api/experiences');
-      const data = await response.json();
-      if (data.success && data.data) {
-        const parsedExperiences = data.data.map((exp: Experience) => ({
-          ...exp,
-          skills: typeof exp.skills === 'string' ? JSON.parse(exp.skills) : exp.skills
-        }));
-        setExperiences(parsedExperiences);
+      if (typeof window !== 'undefined') { // Only fetch on client side
+        const response = await fetch('/api/experiences');
+        const data = await response.json();
+        
+        // Enhanced error checking
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+          const parsedExperiences = data.data.map((exp: any) => ({
+            ...exp,
+            skills: typeof exp.skills === 'string' ? JSON.parse(exp.skills) : (Array.isArray(exp.skills) ? exp.skills : [])
+          }));
+          setExperiences(parsedExperiences);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch experiences:', error);
-      // Fallback to hardcoded data if API fails
-      setExperiences([
-        {
-          id: '1',
-          company: 'PT TOWUTI KARYA ABADI',
-          position: 'Project Manager & Fullstack Engineer',
-          description: 'Led cross-functional teams of 5+ members to deliver high-impact projects on time and within budget. Developed FMS systems for mining operations and implemented real-time fleet monitoring.',
-          startDate: '2024-12',
-          endDate: undefined,
-          location: 'Jakarta, Indonesia',
-          skills: ['Agile', 'Scrum', 'Team Leadership', 'PHP', 'Laravel', 'Lumen', 'Swagger', 'MySQL', 'Vue']
-        },
-        {
-          id: '2',
-          company: 'PT POLYTAMA PROPINDO',
-          position: 'Application Developer - Intern',
-          description: "Successfully migrated PT Polytama Propindo's outdated website to a modern platform, significantly improving functionality and user experience and Worked on enhancing the performance and user interface of several websites within the company",
-          startDate: '2023-09',
-          endDate: '2024-02',
-          location: 'Indramayu, Indonesia',
-          skills: ['Laravel', 'PHP', 'Bootstrap', 'PostgreSQL', 'JavaScript']
-        },
-        {
-          id: '3',
-          company: 'PT NUSHA DIGITAL SOLUTION',
-          position: 'Front End Engineer',
-          description: 'Developed responsive web applications using Laravel framework for clients and implemented front-end components using JavaScript, CSS, and Bootstrap, ensuring optimal user experience.',
-          startDate: '2022-08',
-          endDate: '2023-07',
-          location: 'Jakarta, Indonesia',
-          skills: ['PHP', 'Swagger', 'HTML', 'CSS', 'Mysql', 'Bootstrap', 'JavaScript']
-        },
-        {
-          id: '4',
-          company: 'PT SUCOFINDO',
-          position: 'IT OFFICER - Intern',
-          description: 'Manage IT infrastructure and support services for the organization. Ensure system reliability and security. Data Entry and Management.',
-          startDate: '2019-08',
-          endDate: '2019-11',
-          location: 'Cirebon, Indonesia',
-          skills: ['PHP', 'HTML', 'CSS', 'Mysql']
-        }
-      ]);
-    } finally {
-      setLoading(false);
+      // Keep fallback data on error
     }
   };
+
+  // Don't render until mounted to prevent hydration issues
+  if (!mounted) {
+    return null;
+  }
 
   const stats = [
     { icon: Target, label: 'Projects Completed', value: '20+' },
@@ -218,7 +234,8 @@ const AboutSection = () => {
               {/* Timeline line */}
               <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-border"></div>
               
-              {experiences.map((exp, index) => (
+              {/* Ensure experiences is always an array before mapping */}
+              {Array.isArray(experiences) && experiences.length > 0 ? experiences.map((exp, index) => (
                 <motion.div
                   key={exp.id}
                   initial={{ opacity: 0, x: 20 }}
@@ -274,7 +291,7 @@ const AboutSection = () => {
                     </p>
                     
                     <div className="flex flex-wrap gap-2">
-                      {exp.skills.map((skill) => (
+                      {Array.isArray(exp.skills) && exp.skills.map((skill) => (
                         <span
                           key={skill}
                           className="px-3 py-1 text-sm bg-primary-gold/10 text-primary-gold rounded-full border border-primary-gold/20"
@@ -285,7 +302,11 @@ const AboutSection = () => {
                     </div>
                   </motion.div>
                 </motion.div>
-              ))}
+              )) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-400">Loading experiences...</p>
+                </div>
+              )}
             </div>
           </motion.div>
         </div>

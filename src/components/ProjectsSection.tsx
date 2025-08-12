@@ -34,7 +34,9 @@ const ProjectsSection = () => {
       setLoading(true);
       const response = await fetch('/api/projects');
       const data = await response.json();
-      if (data.success && data.data) {
+      
+      // Enhanced error checking
+      if (data.success && Array.isArray(data.data)) {
         // Parse technologies from JSON string and sort by featured first, then by order
         const parsedProjects = data.data.map((project: any) => ({
           ...project,
@@ -49,9 +51,13 @@ const ProjectsSection = () => {
         });
         
         setProjects(parsedProjects);
+      } else {
+        // Fallback to empty array
+        setProjects([]);
       }
     } catch (error) {
-      console.error('Error fetching projects:', error);
+      console.error('Failed to fetch projects:', error);
+      setProjects([]); // Always ensure it's an array
     } finally {
       setLoading(false);
     }
@@ -130,7 +136,7 @@ const ProjectsSection = () => {
             layout
             className="grid md:grid-cols-2 xl:grid-cols-3 gap-8"
           >
-            {filteredProjects().map((project, index) => (
+            {Array.isArray(projects) && projects.length > 0 ? filteredProjects().map((project, index) => (
             <motion.div
               key={project.id}
               layout
@@ -247,7 +253,11 @@ const ProjectsSection = () => {
                 </div>
               </div>
             </motion.div>
-          ))}
+          )) : (
+            <div className="text-center py-8">
+              <p className="text-gray-400">No projects available</p>
+            </div>
+          )}
           </motion.div>
         )}
 

@@ -12,8 +12,8 @@ const defaultExperiences = [
     location: 'Jakarta, Indonesia',
     skills: JSON.stringify(['Agile', 'Scrum', 'Team Leadership', 'PHP', 'Laravel', 'Lumen', 'Swagger', 'MySQL', 'Vue']),
     order: 0,
-    createdAt: Date.now(),
-    updatedAt: Date.now()
+    createdAt: '2024-12-01T00:00:00.000Z', // Use static dates
+    updatedAt: '2024-12-01T00:00:00.000Z'
   },
   {
     id: '2',
@@ -25,8 +25,8 @@ const defaultExperiences = [
     location: 'Indramayu, Indonesia',
     skills: JSON.stringify(['Laravel', 'PHP', 'Bootstrap', 'PostgreSQL', 'JavaScript']),
     order: 1,
-    createdAt: Date.now(),
-    updatedAt: Date.now()
+    createdAt: '2023-09-01T00:00:00.000Z',
+    updatedAt: '2024-02-01T00:00:00.000Z'
   },
   {
     id: '3',
@@ -38,8 +38,8 @@ const defaultExperiences = [
     location: 'Jakarta, Indonesia',
     skills: JSON.stringify(['PHP', 'Swagger', 'HTML', 'CSS', 'Mysql', 'Bootstrap', 'JavaScript']),
     order: 2,
-    createdAt: Date.now(),
-    updatedAt: Date.now()
+    createdAt: '2022-08-01T00:00:00.000Z',
+    updatedAt: '2023-07-01T00:00:00.000Z'
   },
   {
     id: '4',
@@ -51,21 +51,25 @@ const defaultExperiences = [
     location: 'Cirebon, Indonesia',
     skills: JSON.stringify(['PHP', 'HTML', 'CSS', 'Mysql']),
     order: 3,
-    createdAt: Date.now(),
-    updatedAt: Date.now()
+    createdAt: '2019-08-01T00:00:00.000Z',
+    updatedAt: '2019-11-01T00:00:00.000Z'
   }
 ];
 
 export async function GET() {
   try {
+    // Always ensure we return an array
     return NextResponse.json({
       success: true,
-      data: defaultExperiences
+      data: Array.isArray(defaultExperiences) ? defaultExperiences : []
     });
   } catch (error) {
-    return NextResponse.json(
-      { success: false, message: 'Failed to fetch experiences' },
-      { status: 500 }
-    );
+    console.error('Error fetching experiences:', error);
+    // Return empty array on error
+    return NextResponse.json({
+      success: false,
+      message: 'Failed to fetch experiences',
+      data: [] // Always provide empty array as fallback
+    }, { status: 500 });
   }
 }
