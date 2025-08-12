@@ -27,7 +27,7 @@ const AboutSection = () => {
       company: 'PT TOWUTI KARYA ABADI',
       position: 'Project Manager & Fullstack Engineer',
       description: 'Led cross-functional teams of 5+ members to deliver high-impact projects on time and within budget. Developed FMS systems for mining operations and implemented real-time fleet monitoring.',
-      startDate: '2024-12',
+      startDate: '2024-12-01',
       endDate: undefined,
       location: 'Jakarta, Indonesia',
       skills: ['Agile', 'Scrum', 'Team Leadership', 'PHP', 'Laravel', 'Lumen', 'Swagger', 'MySQL', 'Vue']
@@ -37,8 +37,8 @@ const AboutSection = () => {
       company: 'PT POLYTAMA PROPINDO',
       position: 'Application Developer - Intern',
       description: "Successfully migrated PT Polytama Propindo's outdated website to a modern platform, significantly improving functionality and user experience and Worked on enhancing the performance and user interface of several websites within the company",
-      startDate: '2023-09',
-      endDate: '2024-02',
+      startDate: '2023-09-01',
+      endDate: '2024-02-01',
       location: 'Indramayu, Indonesia',
       skills: ['Laravel', 'PHP', 'Bootstrap', 'PostgreSQL', 'JavaScript']
     },
@@ -47,8 +47,8 @@ const AboutSection = () => {
       company: 'PT NUSHA DIGITAL SOLUTION',
       position: 'Front End Engineer',
       description: 'Developed responsive web applications using Laravel framework for clients and implemented front-end components using JavaScript, CSS, and Bootstrap, ensuring optimal user experience.',
-      startDate: '2022-08',
-      endDate: '2023-07',
+      startDate: '2022-08-01',
+      endDate: '2023-07-01',
       location: 'Jakarta, Indonesia',
       skills: ['PHP', 'Swagger', 'HTML', 'CSS', 'Mysql', 'Bootstrap', 'JavaScript']
     },
@@ -57,8 +57,8 @@ const AboutSection = () => {
       company: 'PT SUCOFINDO',
       position: 'IT OFFICER - Intern',
       description: 'Manage IT infrastructure and support services for the organization. Ensure system reliability and security. Data Entry and Management.',
-      startDate: '2019-08',
-      endDate: '2019-11',
+      startDate: '2019-08-01',
+      endDate: '2019-11-01',
       location: 'Cirebon, Indonesia',
       skills: ['PHP', 'HTML', 'CSS', 'Mysql']
     }
@@ -66,38 +66,80 @@ const AboutSection = () => {
 
   useEffect(() => {
     setMounted(true);
-    // Use fallback data initially to prevent hydration mismatch
-    setExperiences(fallbackExperiences);
+    // Always start with fallback data to ensure array is available
+    setExperiences([...fallbackExperiences]);
     setLoading(false);
     
-    // Then fetch from API in the background
-    fetchExperiences();
+    // Then try to fetch from API
+    const timeoutId = setTimeout(() => {
+      fetchExperiences();
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const fetchExperiences = async () => {
     try {
-      if (typeof window !== 'undefined') { // Only fetch on client side
-        const response = await fetch('/api/experiences');
-        const data = await response.json();
-        
-        // Enhanced error checking
-        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-          const parsedExperiences = data.data.map((exp: any) => ({
+      if (typeof window === 'undefined') return;
+      
+      const response = await fetch('/api/experiences', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('API Response:', data); // Debug log
+      
+      if (data && data.success && data.data && Array.isArray(data.data)) {
+        const parsedExperiences = data.data.map((exp: any) => {
+          let parsedSkills = [];
+          
+          if (typeof exp.skills === 'string') {
+            try {
+              parsedSkills = JSON.parse(exp.skills);
+            } catch (e) {
+              console.error('Failed to parse skills:', exp.skills);
+              parsedSkills = [];
+            }
+          } else if (Array.isArray(exp.skills)) {
+            parsedSkills = exp.skills;
+          }
+
+          return {
             ...exp,
-            skills: typeof exp.skills === 'string' ? JSON.parse(exp.skills) : (Array.isArray(exp.skills) ? exp.skills : [])
-          }));
+            skills: Array.isArray(parsedSkills) ? parsedSkills : []
+          };
+        });
+        
+        // Only update if we have valid data
+        if (parsedExperiences.length > 0) {
           setExperiences(parsedExperiences);
         }
       }
     } catch (error) {
       console.error('Failed to fetch experiences:', error);
-      // Keep fallback data on error
+      // Keep fallback data on error - don't change experiences state
     }
   };
 
   // Don't render until mounted to prevent hydration issues
   if (!mounted) {
-    return null;
+    return (
+      <section id="about" className="py-20 px-6 bg-background">
+        <div className="max-w-7xl mx-auto">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-700 rounded w-1/2 mx-auto mb-4"></div>
+            <div className="h-4 bg-gray-700 rounded w-3/4 mx-auto mb-8"></div>
+          </div>
+        </div>
+      </section>
+    );
   }
 
   const stats = [
@@ -106,6 +148,9 @@ const AboutSection = () => {
     { icon: Award, label: 'Years Experience', value: '3+' },
     { icon: Code, label: 'Technologies Mastered', value: '20+' },
   ];
+
+  // Ensure experiences is always an array
+  const safeExperiences = Array.isArray(experiences) ? experiences : fallbackExperiences;
 
   return (
     <section id="about" className="py-20 px-6 bg-background">
@@ -234,8 +279,8 @@ const AboutSection = () => {
               {/* Timeline line */}
               <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-border"></div>
               
-              {/* Ensure experiences is always an array before mapping */}
-              {Array.isArray(experiences) && experiences.length > 0 ? experiences.map((exp, index) => (
+              {/* Always ensure we have a valid array */}
+              {safeExperiences.map((exp, index) => (
                 <motion.div
                   key={exp.id}
                   initial={{ opacity: 0, x: 20 }}
@@ -265,16 +310,24 @@ const AboutSection = () => {
                         <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4" />
                           <span>
-                            {new Date(exp.startDate).toLocaleDateString('en-US', { 
-                              month: 'short', 
-                              year: 'numeric' 
-                            })} - {exp.endDate 
-                              ? new Date(exp.endDate).toLocaleDateString('en-US', { 
+                            {(() => {
+                              try {
+                                const startDate = new Date(exp.startDate);
+                                const endDateText = exp.endDate 
+                                  ? new Date(exp.endDate).toLocaleDateString('en-US', { 
+                                      month: 'short', 
+                                      year: 'numeric' 
+                                    })
+                                  : 'Present';
+                                
+                                return `${startDate.toLocaleDateString('en-US', { 
                                   month: 'short', 
                                   year: 'numeric' 
-                                })
-                              : 'Present'
-                            }
+                                })} - ${endDateText}`;
+                              } catch (e) {
+                                return `${exp.startDate} - ${exp.endDate || 'Present'}`;
+                              }
+                            })()}
                           </span>
                         </div>
                         {exp.location && (
@@ -291,9 +344,9 @@ const AboutSection = () => {
                     </p>
                     
                     <div className="flex flex-wrap gap-2">
-                      {Array.isArray(exp.skills) && exp.skills.map((skill) => (
+                      {(Array.isArray(exp.skills) ? exp.skills : []).map((skill, skillIndex) => (
                         <span
-                          key={skill}
+                          key={`${skill}-${skillIndex}`}
                           className="px-3 py-1 text-sm bg-primary-gold/10 text-primary-gold rounded-full border border-primary-gold/20"
                         >
                           {skill}
@@ -302,11 +355,7 @@ const AboutSection = () => {
                     </div>
                   </motion.div>
                 </motion.div>
-              )) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-400">Loading experiences...</p>
-                </div>
-              )}
+              ))}
             </div>
           </motion.div>
         </div>
