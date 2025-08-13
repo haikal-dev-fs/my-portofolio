@@ -28,9 +28,9 @@ const AboutSection = () => {
       position: 'Project Manager & Fullstack Engineer',
       description: 'Led cross-functional teams of 5+ members to deliver high-impact projects on time and within budget. Developed FMS systems for mining operations and implemented real-time fleet monitoring.',
       startDate: '2024-12-01',
-      endDate: undefined,
+      endDate: "",
       location: 'Jakarta, Indonesia',
-      skills: ['Agile', 'Scrum', 'Team Leadership', 'PHP', 'Laravel', 'Lumen', 'Swagger', 'MySQL', 'Vue']
+      skills: ['Agile', 'Scrum', 'Team Leadership', 'PHP', 'Laravel', 'Lumen', 'Swagger', 'MySQL', 'Vue'] // Always array
     },
     {
       id: '2',
@@ -40,7 +40,7 @@ const AboutSection = () => {
       startDate: '2023-09-01',
       endDate: '2024-02-01',
       location: 'Indramayu, Indonesia',
-      skills: ['Laravel', 'PHP', 'Bootstrap', 'PostgreSQL', 'JavaScript']
+      skills: ['Laravel', 'PHP', 'Bootstrap', 'PostgreSQL', 'JavaScript'] // Always array
     },
     {
       id: '3',
@@ -50,7 +50,7 @@ const AboutSection = () => {
       startDate: '2022-08-01',
       endDate: '2023-07-01',
       location: 'Jakarta, Indonesia',
-      skills: ['PHP', 'Swagger', 'HTML', 'CSS', 'Mysql', 'Bootstrap', 'JavaScript']
+      skills: ['PHP', 'Swagger', 'HTML', 'CSS', 'MySQL', 'Bootstrap', 'JavaScript'] // Always array
     },
     {
       id: '4',
@@ -60,7 +60,7 @@ const AboutSection = () => {
       startDate: '2019-08-01',
       endDate: '2019-11-01',
       location: 'Cirebon, Indonesia',
-      skills: ['PHP', 'HTML', 'CSS', 'Mysql']
+      skills: ['PHP', 'HTML', 'CSS', 'MySQL'] // Always array
     }
   ];
 
@@ -98,22 +98,26 @@ const AboutSection = () => {
       
       if (data && data.success && data.data && Array.isArray(data.data)) {
         const parsedExperiences = data.data.map((exp: any) => {
-          let parsedSkills = [];
+          // Ensure skills is always an array or empty array
+          let skills = [];
           
-          if (typeof exp.skills === 'string') {
+          if (Array.isArray(exp.skills)) {
+            skills = exp.skills.filter((skill: any) => skill && typeof skill === 'string');
+          } else if (typeof exp.skills === 'string') {
             try {
-              parsedSkills = JSON.parse(exp.skills);
+              const parsed = JSON.parse(exp.skills);
+              if (Array.isArray(parsed)) {
+                skills = parsed.filter((skill: any) => skill && typeof skill === 'string');
+              }
             } catch (e) {
               console.error('Failed to parse skills:', exp.skills);
-              parsedSkills = [];
+              skills = []; // Set to empty array on parse error
             }
-          } else if (Array.isArray(exp.skills)) {
-            parsedSkills = exp.skills;
           }
 
           return {
             ...exp,
-            skills: Array.isArray(parsedSkills) ? parsedSkills : []
+            skills: skills // Always an array, even if empty
           };
         });
         
@@ -349,48 +353,25 @@ const AboutSection = () => {
                         try {
                           const skills = exp?.skills;
                           
-                          if (!skills) return null;
-                          
-                          if (Array.isArray(skills)) {
-                            return skills.map((skill, skillIndex) => {
-                              if (typeof skill !== 'string' || skill.trim() === '') return null;
-                              return (
-                                <span
-                                  key={`${skill}-${skillIndex}-${exp.id}`}
-                                  className="px-3 py-1 text-sm bg-primary-gold/10 text-primary-gold rounded-full border border-primary-gold/20"
-                                >
-                                  {skill}
-                                </span>
-                              );
-                            }).filter(Boolean);
+                          if (!skills || !Array.isArray(skills) || skills.length === 0) {
+                            return null; // Hide skills section if no valid skills
                           }
                           
-                          if (typeof skills === 'string') {
-                            try {
-                              const parsed = JSON.parse(skills);
-                              if (Array.isArray(parsed)) {
-                                return parsed.map((skill, skillIndex) => (
-                                  <span
-                                    key={`${skill}-${skillIndex}-${exp.id}`}
-                                    className="px-3 py-1 text-sm bg-primary-gold/10 text-primary-gold rounded-full border border-primary-gold/20"
-                                  >
-                                    {skill}
-                                  </span>
-                                ));
-                              }
-                            } catch {
-                              return (
-                                <span className="px-3 py-1 text-sm bg-primary-gold/10 text-primary-gold rounded-full border border-primary-gold/20">
-                                  {skills}
-                                </span>
-                              );
-                            }
-                          }
+                          return skills.map((skill, skillIndex) => {
+                            if (typeof skill !== 'string' || skill.trim() === '') return null;
+                            return (
+                              <span
+                                key={`${skill}-${skillIndex}-${exp.id}`}
+                                className="px-3 py-1 text-sm bg-primary-gold/10 text-primary-gold rounded-full border border-primary-gold/20"
+                              >
+                                {skill}
+                              </span>
+                            );
+                          }).filter(Boolean);
                           
-                          return null;
                         } catch (error) {
                           console.error('Skills render error:', error);
-                          return null;
+                          return null; // Hide skills section on any error
                         }
                       })()}
                     </div>
