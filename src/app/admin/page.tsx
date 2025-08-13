@@ -252,9 +252,31 @@ function ProfileEditor() {
       const data = await response.json();
       if (data.success) {
         const profileData = data.data;
+        
+        // Ultra-safe skills parsing
+        let parsedSkills: string[] = [];
+        try {
+          if (profileData.skills) {
+            if (typeof profileData.skills === 'string') {
+              const parsed = JSON.parse(profileData.skills);
+              if (Array.isArray(parsed)) {
+                parsedSkills = parsed.filter((skill: any) => typeof skill === 'string');
+              } else {
+                // If it's an object (like the default profile), convert to array
+                parsedSkills = [];
+              }
+            } else if (Array.isArray(profileData.skills)) {
+              parsedSkills = profileData.skills.filter((skill: any) => typeof skill === 'string');
+            }
+          }
+        } catch (parseError) {
+          console.warn('Failed to parse profile skills:', parseError);
+          parsedSkills = [];
+        }
+        
         setProfile({
           ...profileData,
-          skills: profileData.skills ? JSON.parse(profileData.skills) : []
+          skills: parsedSkills
         });
       }
     } catch (error) {

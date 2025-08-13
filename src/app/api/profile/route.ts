@@ -45,12 +45,7 @@ export async function GET() {
         linkedinUrl: "https://www.linkedin.com/in/haikal-alfandi-61836922a/",
         githubUrl: "https://github.com/haikal-dev-fs",
         resumeUrl: null,
-        skills: JSON.stringify({
-          "Management": ["Agile/Scrum", "Team Leadership", "Risk Assessment"],
-          "Frontend": ["React", "Next.js", "JavaScript", "Tailwind CSS", "Bootstrap CSS", "HTML"],
-          "Backend": ["PHP", "Laravel", "Lumen", "Swagger", "Node.js", "Python", "PostgreSQL", "MongoDB", "MySQL"],
-          "DevOps": ["CI/CD", "Git"]
-        }),
+        skills: JSON.stringify(["Agile/Scrum", "Team Leadership", "Risk Assessment", "React", "Next.js", "JavaScript", "Tailwind CSS", "Bootstrap CSS", "HTML", "PHP", "Laravel", "Lumen", "Swagger", "Node.js", "Python", "PostgreSQL", "MongoDB", "MySQL", "CI/CD", "Git"]),
         createdAt: Date.now(),
         updatedAt: Date.now()
       };
