@@ -19,13 +19,56 @@ const HeroSection = () => {
 
   useEffect(() => {
     setMounted(true);
-    // Don't try to check CV for now to avoid 500 error
-    // checkCV();
+    fetchProfile();
+    checkCV();
   }, []);
 
+  const fetchProfile = async () => {
+    try {
+      const response = await fetch('/api/profile');
+      const data = await response.json();
+      if (data.success && data.data) {
+        setProfile({
+          name: data.data.name || "Muhammad Haikal",
+          title: data.data.title || "Project Manager & Fullstack Engineer", 
+          bio: data.data.bio || "Bridging the gap between technical excellence and project success.",
+          email: data.data.email || "haikal@example.com",
+          linkedinUrl: data.data.linkedinUrl || "https://linkedin.com/in/haikal-dev",
+          githubUrl: data.data.githubUrl || "https://github.com/haikal-dev-fs"
+        });
+        
+        // Set CV URL if available
+        if (data.data.resumeUrl) {
+          setCvUrl(data.data.resumeUrl);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+      // Keep fallback data if API fails
+    }
+  };
+
+  const checkCV = async () => {
+    try {
+      const response = await fetch('/api/cv/check');
+      const data = await response.json();
+      if (data.success && data.data.cvExists) {
+        setCvUrl(data.data.url);
+      }
+    } catch (error) {
+      console.log('CV check failed:', error);
+      // Keep cvUrl as null if check fails
+    }
+  };
+
   const handleDownloadCV = () => {
-    // Simple alert instead of trying to download
-    alert('CV tidak tersedia saat ini. Silakan hubungi saya langsung untuk CV.');
+    if (cvUrl) {
+      // Open CV in new tab or download directly
+      window.open(cvUrl, '_blank');
+    } else {
+      // Fallback message if no CV available
+      alert('CV tidak tersedia saat ini. Silakan hubungi saya langsung untuk CV.');
+    }
   };
 
   if (!mounted) {
