@@ -119,6 +119,42 @@ const AboutSection = () => {
     const safeData = processSafeExperiences(fallbackExperiences);
     setExperiences(safeData);
     setLoading(false);
+    
+    // Optionally try to fetch from API but don't let it fail
+    const fetchExperiences = async () => {
+      try {
+        if (typeof window === 'undefined') return;
+        
+        const response = await fetch('/api/experiences', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (!response.ok) {
+          console.warn('Failed to fetch experiences from API, using fallback data');
+          return;
+        }
+        
+        const data = await response.json();
+        console.log('API Response:', data); // Debug log
+        
+        if (data && data.success && data.data && Array.isArray(data.data)) {
+          const apiSafeData = processSafeExperiences(data.data);
+          // Only update if we have valid processed data
+          if (apiSafeData.length > 0) {
+            setExperiences(apiSafeData);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch experiences:', error);
+        // Keep fallback data on error - don't change experiences state
+      }
+    };
+    
+    // Try to fetch API data after a small delay
+    setTimeout(fetchExperiences, 100);
   }, []);
 
   // Don't render until mounted

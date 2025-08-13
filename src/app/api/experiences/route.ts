@@ -72,23 +72,61 @@ const defaultExperiences = [
 
 export async function GET() {
 	try {
-		// FIX: Simplify - since defaultExperiences already has arrays, just return them
+		// FIX: Ultra-safe processing - handle both hardcoded arrays and JSON strings
 		const processedExperiences = defaultExperiences.map((exp) => {
-			// Simple processing - ensure skills is always an array
-			const processedSkills = Array.isArray(exp.skills) ? exp.skills : [];
+			let processedSkills: string[] = [];
+
+			try {
+				// Handle different skill formats
+				if (Array.isArray(exp.skills)) {
+					// Already an array
+					processedSkills = exp.skills.filter((skill: any) => 
+						typeof skill === 'string' && skill.trim().length > 0
+					);
+				} else if (typeof exp.skills === 'string') {
+					try {
+						// Try to parse as JSON first
+						const parsed = JSON.parse(exp.skills);
+						if (Array.isArray(parsed)) {
+							processedSkills = parsed.filter((skill: any) => 
+								typeof skill === 'string' && skill.trim().length > 0
+							);
+						} else {
+							// If it's not an array after parsing, treat as empty
+							processedSkills = [];
+						}
+					} catch (parseError) {
+						// If JSON parse fails, treat as single skill or empty
+						console.warn('Failed to parse skills JSON:', exp.skills);
+						const skillsStr = exp.skills as string;
+						processedSkills = (typeof skillsStr === 'string' && skillsStr.trim()) 
+							? [skillsStr.trim()] 
+							: [];
+					}
+				} else if (exp.skills === null || exp.skills === undefined) {
+					// Handle null/undefined
+					processedSkills = [];
+				} else {
+					// Any other type, convert to string or empty
+					processedSkills = [];
+				}
+			} catch (skillsError) {
+				console.warn('Error processing skills for experience:', exp.id, skillsError);
+				processedSkills = [];
+			}
 
 			return {
-				id: exp.id,
-				company: exp.company,
-				position: exp.position,
-				description: exp.description,
-				startDate: exp.startDate,
-				endDate: exp.endDate,
-				location: exp.location,
-				skills: processedSkills, // Already guaranteed to be array
-				order: exp.order,
-				createdAt: exp.createdAt,
-				updatedAt: exp.updatedAt,
+				id: exp.id || '',
+				company: exp.company || '',
+				position: exp.position || '',
+				description: exp.description || '',
+				startDate: exp.startDate || '',
+				endDate: exp.endDate || null,
+				location: exp.location || '',
+				skills: processedSkills, // Always guaranteed to be a valid array
+				order: exp.order || 0,
+				createdAt: exp.createdAt || new Date().toISOString(),
+				updatedAt: exp.updatedAt || new Date().toISOString(),
 			};
 		});
 
