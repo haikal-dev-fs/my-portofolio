@@ -3,6 +3,7 @@ import db from '../../../lib/db';
 import { profiles } from '../../../lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { Profile } from '../../../lib/db/schema';
+import { createId } from '@paralleldrive/cuid2';
 
 // Middleware to check admin authentication
 function checkAuth(request: NextRequest) {
@@ -13,13 +14,49 @@ function checkAuth(request: NextRequest) {
 // In-memory fallback storage for Vercel deployment issues
 let memoryProfile: Profile | null = null;
 
+// Function to ensure profile exists (auto-seed)
+async function ensureProfileExists() {
+  try {
+    const existingProfile = await db.select().from(profiles).limit(1);
+    
+    if (existingProfile.length === 0) {
+      console.log('No profile found, creating default profile...');
+      
+      const defaultProfile = {
+        id: createId(),
+        name: "Muhammad Haikal",
+        title: "Project Manager & Fullstack Engineer",
+        bio: "Bridging the gap between technical excellence and project success. I bring both hands-on development skills and strategic project management expertise.",
+        email: "mhaikalas@gmail.com",
+        phone: "+62 8231 8979 805",
+        location: "Jakarta, Indonesia",
+        linkedinUrl: "https://www.linkedin.com/in/haikal-alfandi-61836922a/",
+        githubUrl: "https://github.com/haikal-dev-fs",
+        resumeUrl: null,
+        skills: JSON.stringify(["Agile/Scrum", "Team Leadership", "Risk Assessment", "React", "Next.js", "JavaScript", "Tailwind CSS", "Bootstrap CSS", "HTML", "PHP", "Laravel", "Lumen", "Swagger", "Node.js", "Python", "PostgreSQL", "MongoDB", "MySQL", "CI/CD", "Git"]),
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      };
+      
+      const newProfile = await db.insert(profiles).values(defaultProfile).returning();
+      console.log('Default profile created successfully');
+      return newProfile[0];
+    }
+    
+    return existingProfile[0];
+  } catch (error) {
+    console.error('Error ensuring profile exists:', error);
+    throw error;
+  }
+}
+
 export async function GET() {
   try {
-    let profileData: Profile[] = [];
+    let profileData: Profile | null = null;
     
     // Try to get from database first
     try {
-      profileData = await db.select().from(profiles).limit(1);
+      profileData = await ensureProfileExists();
     } catch (dbError) {
       console.error('Database connection error:', dbError);
       // Check if we have memory profile as fallback
@@ -29,11 +66,8 @@ export async function GET() {
           data: memoryProfile
         });
       }
-      profileData = [];
-    }
-    
-    if (profileData.length === 0) {
-      // Return default profile - REMOVED stats property
+      
+      // Return default profile if nothing else works
       const defaultProfile: Partial<Profile> = {
         id: 'default',
         name: "Muhammad Haikal",
@@ -58,7 +92,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      data: profileData[0]
+      data: profileData
     });
   } catch (error) {
     console.error('Profile GET error:', error);

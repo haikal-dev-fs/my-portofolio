@@ -50,46 +50,58 @@ export async function POST(request: NextRequest) {
     const base64String = buffer.toString('base64');
     const dataUrl = `data:application/pdf;base64,${base64String}`;
 
-    // Get or create profile
-    const existingProfile = await db.select().from(profiles).limit(1);
-    
-    if (existingProfile.length === 0) {
-      // Create new profile with CV
-      const newProfile = await db.insert(profiles).values({
-        name: "Muhammad Haikal",
-        title: "Project Manager & Fullstack Engineer",
-        bio: "Bridging the gap between technical excellence and project success.",
-        email: "haikal@example.com",
-        phone: "+6285777123456",
-        location: "Jakarta, Indonesia",
-        linkedinUrl: "https://linkedin.com/in/haikal-dev",
-        githubUrl: "https://github.com/haikal-dev-fs",
-        resumeUrl: dataUrl,
-        skills: JSON.stringify(["Agile/Scrum", "Team Leadership", "Risk Assessment", "React", "Next.js", "JavaScript", "Tailwind CSS", "Bootstrap CSS", "HTML", "PHP", "Laravel", "Lumen", "Swagger", "Node.js", "Python", "PostgreSQL", "MongoDB", "MySQL", "CI/CD", "Git"]),
-        updatedAt: Date.now()
-      }).returning();
-
-      return NextResponse.json({
-        success: true,
-        message: 'CV uploaded successfully',
-        data: newProfile[0]
-      });
-    } else {
-      // Update existing profile with CV
-      const updatedProfile = await db
-        .update(profiles)
-        .set({
+    try {
+      // Get or create profile
+      const existingProfile = await db.select().from(profiles).limit(1);
+      
+      if (existingProfile.length === 0) {
+        // Create new profile with CV
+        const newProfile = await db.insert(profiles).values({
+          name: "Muhammad Haikal",
+          title: "Project Manager & Fullstack Engineer",
+          bio: "Bridging the gap between technical excellence and project success.",
+          email: "mhaikalas@gmail.com",
+          phone: "+62 8231 8979 805",
+          location: "Jakarta, Indonesia",
+          linkedinUrl: "https://www.linkedin.com/in/haikal-alfandi-61836922a/",
+          githubUrl: "https://github.com/haikal-dev-fs",
           resumeUrl: dataUrl,
+          skills: JSON.stringify(["Agile/Scrum", "Team Leadership", "Risk Assessment", "React", "Next.js", "JavaScript", "Tailwind CSS", "Bootstrap CSS", "HTML", "PHP", "Laravel", "Lumen", "Swagger", "Node.js", "Python", "PostgreSQL", "MongoDB", "MySQL", "CI/CD", "Git"]),
           updatedAt: Date.now()
-        })
-        .where(eq(profiles.id, existingProfile[0].id))
-        .returning();
+        }).returning();
 
+        return NextResponse.json({
+          success: true,
+          message: 'CV uploaded successfully',
+          data: { url: '/api/cv', ...newProfile[0] }
+        });
+      } else {
+        // Update existing profile with CV
+        const updatedProfile = await db
+          .update(profiles)
+          .set({
+            resumeUrl: dataUrl,
+            updatedAt: Date.now()
+          })
+          .where(eq(profiles.id, existingProfile[0].id))
+          .returning();
+
+        return NextResponse.json({
+          success: true,
+          message: 'CV updated successfully',
+          data: { url: '/api/cv', ...updatedProfile[0] }
+        });
+      }
+    } catch (dbError) {
+      console.error('Database error in CV upload:', dbError);
+      // Log the specific error for debugging
+      console.error('Error details:', String(dbError));
+      
       return NextResponse.json({
-        success: true,
-        message: 'CV updated successfully',
-        data: updatedProfile[0]
-      });
+        success: false,
+        message: 'Database error occurred. Please try again.',
+        error: String(dbError)
+      }, { status: 500 });
     }
 
   } catch (error) {
