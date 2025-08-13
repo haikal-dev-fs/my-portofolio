@@ -10,7 +10,7 @@ interface Experience {
   position: string;
   description: string;
   startDate: string;
-  endDate?: string;
+  endDate?: string | null;
   location?: string;
   skills: string[];
 }
@@ -20,7 +20,7 @@ const AboutSection = () => {
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
 
-  // Fallback data - make sure it's always available
+  // Completely safe fallback data
   const fallbackExperiences: Experience[] = [
     {
       id: '1',
@@ -28,9 +28,9 @@ const AboutSection = () => {
       position: 'Project Manager & Fullstack Engineer',
       description: 'Led cross-functional teams of 5+ members to deliver high-impact projects on time and within budget. Developed FMS systems for mining operations and implemented real-time fleet monitoring.',
       startDate: '2024-12-01',
-      endDate: "",
+      endDate: null,
       location: 'Jakarta, Indonesia',
-      skills: ['Agile', 'Scrum', 'Team Leadership', 'PHP', 'Laravel', 'Lumen', 'Swagger', 'MySQL', 'Vue'] // Always array
+      skills: ['Agile', 'Scrum', 'Team Leadership', 'PHP', 'Laravel', 'Lumen', 'Swagger', 'MySQL', 'Vue']
     },
     {
       id: '2',
@@ -40,7 +40,7 @@ const AboutSection = () => {
       startDate: '2023-09-01',
       endDate: '2024-02-01',
       location: 'Indramayu, Indonesia',
-      skills: ['Laravel', 'PHP', 'Bootstrap', 'PostgreSQL', 'JavaScript'] // Always array
+      skills: ['Laravel', 'PHP', 'Bootstrap', 'PostgreSQL', 'JavaScript']
     },
     {
       id: '3',
@@ -50,7 +50,7 @@ const AboutSection = () => {
       startDate: '2022-08-01',
       endDate: '2023-07-01',
       location: 'Jakarta, Indonesia',
-      skills: ['PHP', 'Swagger', 'HTML', 'CSS', 'MySQL', 'Bootstrap', 'JavaScript'] // Always array
+      skills: ['PHP', 'Swagger', 'HTML', 'CSS', 'MySQL', 'Bootstrap', 'JavaScript']
     },
     {
       id: '4',
@@ -60,79 +60,68 @@ const AboutSection = () => {
       startDate: '2019-08-01',
       endDate: '2019-11-01',
       location: 'Cirebon, Indonesia',
-      skills: ['PHP', 'HTML', 'CSS', 'MySQL'] // Always array
+      skills: ['PHP', 'HTML', 'CSS', 'MySQL']
     }
   ];
 
-  useEffect(() => {
-    setMounted(true);
-    // Always start with fallback data to ensure array is available
-    setExperiences([...fallbackExperiences]);
-    setLoading(false);
-    
-    // Then try to fetch from API
-    const timeoutId = setTimeout(() => {
-      fetchExperiences();
-    }, 100);
+  // Safe data processing function
+  const processSafeExperiences = (rawExperiences: any[]): Experience[] => {
+    if (!Array.isArray(rawExperiences)) {
+      return [...fallbackExperiences];
+    }
 
-    return () => clearTimeout(timeoutId);
-  }, []);
+    return rawExperiences.map((exp, index) => {
+      // Ensure every field has a safe default
+      const safeExp: Experience = {
+        id: exp?.id || `fallback-${index}`,
+        company: exp?.company || 'Unknown Company',
+        position: exp?.position || 'Unknown Position',
+        description: exp?.description || 'No description available',
+        startDate: exp?.startDate || '2024-01-01',
+        endDate: exp?.endDate || null,
+        location: exp?.location || '',
+        skills: [] // Start with empty array
+      };
 
-  const fetchExperiences = async () => {
-    try {
-      if (typeof window === 'undefined') return;
-      
-      const response = await fetch('/api/experiences', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('API Response:', data); // Debug log
-      
-      if (data && data.success && data.data && Array.isArray(data.data)) {
-        const parsedExperiences = data.data.map((exp: any) => {
-          // Ensure skills is always an array or empty array
-          let skills = [];
-          
+      // Handle skills very carefully
+      try {
+        if (exp?.skills) {
           if (Array.isArray(exp.skills)) {
-            skills = exp.skills.filter((skill: any) => skill && typeof skill === 'string');
+            safeExp.skills = exp.skills.filter((skill: any) => 
+              typeof skill === 'string' && skill.trim().length > 0
+            );
           } else if (typeof exp.skills === 'string') {
             try {
               const parsed = JSON.parse(exp.skills);
               if (Array.isArray(parsed)) {
-                skills = parsed.filter((skill: any) => skill && typeof skill === 'string');
+                safeExp.skills = parsed.filter((skill: any) => 
+                  typeof skill === 'string' && skill.trim().length > 0
+                );
               }
-            } catch (e) {
-              console.error('Failed to parse skills:', exp.skills);
-              skills = []; // Set to empty array on parse error
+            } catch (parseError) {
+              console.warn('Failed to parse skills string:', exp.skills);
+              safeExp.skills = [];
             }
           }
-
-          return {
-            ...exp,
-            skills: skills // Always an array, even if empty
-          };
-        });
-        
-        // Only update if we have valid data
-        if (parsedExperiences.length > 0) {
-          setExperiences(parsedExperiences);
         }
+      } catch (skillsError) {
+        console.warn('Error processing skills:', skillsError);
+        safeExp.skills = [];
       }
-    } catch (error) {
-      console.error('Failed to fetch experiences:', error);
-      // Keep fallback data on error - don't change experiences state
-    }
+
+      return safeExp;
+    });
   };
 
-  // Don't render until mounted to prevent hydration issues
+  useEffect(() => {
+    setMounted(true);
+    // Set safe fallback data immediately
+    const safeData = processSafeExperiences(fallbackExperiences);
+    setExperiences(safeData);
+    setLoading(false);
+  }, []);
+
+  // Don't render until mounted
   if (!mounted) {
     return (
       <section id="about" className="py-20 px-6 bg-background">
@@ -153,8 +142,37 @@ const AboutSection = () => {
     { icon: Code, label: 'Technologies Mastered', value: '20+' },
   ];
 
-  // Ensure experiences is always an array
-  const safeExperiences = Array.isArray(experiences) ? experiences : fallbackExperiences;
+  // Super safe skills rendering component
+  const SkillsList = ({ skills, expId }: { skills: string[], expId: string }) => {
+    try {
+      if (!skills || !Array.isArray(skills) || skills.length === 0) {
+        return null;
+      }
+
+      return (
+        <div className="flex flex-wrap gap-2">
+          {skills.map((skill, skillIndex) => {
+            // Double check each skill
+            if (typeof skill !== 'string' || skill.trim() === '') {
+              return null;
+            }
+            
+            return (
+              <span
+                key={`skill-${expId}-${skillIndex}-${skill.replace(/[^a-zA-Z0-9]/g, '')}`}
+                className="px-3 py-1 text-sm bg-primary-gold/10 text-primary-gold rounded-full border border-primary-gold/20"
+              >
+                {skill.trim()}
+              </span>
+            );
+          })}
+        </div>
+      );
+    } catch (error) {
+      console.error('SkillsList render error:', error);
+      return null;
+    }
+  };
 
   return (
     <section id="about" className="py-20 px-6 bg-background">
@@ -283,8 +301,7 @@ const AboutSection = () => {
               {/* Timeline line */}
               <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-border"></div>
               
-              {/* Always ensure we have a valid array */}
-              {safeExperiences.map((exp, index) => (
+              {experiences.map((exp, index) => (
                 <motion.div
                   key={exp.id}
                   initial={{ opacity: 0, x: 20 }}
@@ -347,34 +364,7 @@ const AboutSection = () => {
                       {exp.description}
                     </p>
                     
-                    <div className="flex flex-wrap gap-2">
-                      {(() => {
-                        // Ultra-safe skills handling
-                        try {
-                          const skills = exp?.skills;
-                          
-                          if (!skills || !Array.isArray(skills) || skills.length === 0) {
-                            return null; // Hide skills section if no valid skills
-                          }
-                          
-                          return skills.map((skill, skillIndex) => {
-                            if (typeof skill !== 'string' || skill.trim() === '') return null;
-                            return (
-                              <span
-                                key={`${skill}-${skillIndex}-${exp.id}`}
-                                className="px-3 py-1 text-sm bg-primary-gold/10 text-primary-gold rounded-full border border-primary-gold/20"
-                              >
-                                {skill}
-                              </span>
-                            );
-                          }).filter(Boolean);
-                          
-                        } catch (error) {
-                          console.error('Skills render error:', error);
-                          return null; // Hide skills section on any error
-                        }
-                      })()}
-                    </div>
+                    <SkillsList skills={exp.skills} expId={exp.id} />
                   </motion.div>
                 </motion.div>
               ))}
