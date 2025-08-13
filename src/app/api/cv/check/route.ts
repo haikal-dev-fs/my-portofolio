@@ -1,41 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { existsSync } from 'fs';
-import path from 'path';
+import db from '../../../../lib/db';
+import { profiles } from '../../../../lib/db/schema';
 
 export async function GET(request: NextRequest) {
   try {
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'cv');
+    const profile = await db.select().from(profiles).limit(1);
     
-    if (!existsSync(uploadsDir)) {
+    if (profile.length === 0 || !profile[0].resumeUrl) {
       return NextResponse.json({
-        success: false,
-        message: 'CV not available'
+        success: true,
+        data: {
+          cvExists: false,
+          url: null
+        }
       });
     }
 
-    // Check for CV files
-    const { readdir } = await import('fs/promises');
-    const files = await readdir(uploadsDir);
-    const cvFile = files.find(file => file.endsWith('.pdf'));
-    
-    if (cvFile) {
-      return NextResponse.json({
-        success: true,
-        cvUrl: `/uploads/cv/${cvFile}`,
-        filename: cvFile
-      });
-    } else {
-      return NextResponse.json({
-        success: false,
-        message: 'CV not available'
-      });
-    }
+    return NextResponse.json({
+      success: true,
+      data: {
+        cvExists: true,
+        url: `/api/cv`, // URL to download CV
+        filename: 'CV-Muhammad-Haikal.pdf'
+      }
+    });
 
   } catch (error) {
     console.error('Error checking CV:', error);
-    return NextResponse.json(
-      { success: false, message: 'Failed to check CV availability' },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      success: false,
+      message: 'Failed to check CV availability',
+      data: {
+        cvExists: false,
+        url: null
+      }
+    }, { status: 500 });
   }
 }
