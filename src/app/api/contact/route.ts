@@ -5,10 +5,21 @@ import { desc } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, subject, message } = await request.json();
+    console.log('Contact form submission started');
+    
+    const body = await request.json();
+    console.log('Request body received:', { 
+      name: body.name ? 'present' : 'missing',
+      email: body.email ? 'present' : 'missing',
+      subject: body.subject ? 'present' : 'missing',
+      message: body.message ? 'present' : 'missing'
+    });
+    
+    const { name, email, subject, message } = body;
 
     // Validate required fields
     if (!name || !email || !subject || !message) {
+      console.log('Validation failed: missing required fields');
       return NextResponse.json(
         { success: false, message: 'All fields are required' },
         { status: 400 }
@@ -18,12 +29,26 @@ export async function POST(request: NextRequest) {
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
+      console.log('Validation failed: invalid email format');
       return NextResponse.json(
         { success: false, message: 'Please enter a valid email address' },
         { status: 400 }
       );
     }
 
+    console.log('Attempting to insert message into database...');
+    
+    // Check if messages table exists and create if needed
+    try {
+      // Test table existence with a simple query
+      await db.select().from(messages).limit(1);
+      console.log('Messages table exists');
+    } catch (tableError) {
+      console.log('Messages table might not exist, error:', tableError instanceof Error ? tableError.message : 'Unknown');
+      // Re-throw the original error for now
+      throw tableError;
+    }
+    
     // Insert message into database
     const newMessage = await db.insert(messages).values({
       name,
@@ -31,6 +56,8 @@ export async function POST(request: NextRequest) {
       subject,
       message,
     }).returning();
+
+    console.log('Message inserted successfully:', newMessage[0]?.id);
 
     return NextResponse.json({
       success: true,
@@ -40,8 +67,18 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error saving contact message:', error);
+    console.error('Error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    
     return NextResponse.json(
-      { success: false, message: 'Failed to send message. Please try again.' },
+      { 
+        success: false, 
+        message: 'Failed to send message. Please try again.',
+        error: process.env.NODE_ENV === 'development' ? error instanceof Error ? error.message : 'Unknown error' : undefined
+      },
       { status: 500 }
     );
   }
