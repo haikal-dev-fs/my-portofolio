@@ -83,13 +83,9 @@ export default function MessageManager() {
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      
-      // Check if date is valid
       if (isNaN(date.getTime())) {
-        console.warn('Invalid date string:', dateString);
         return 'Invalid Date';
       }
-      
       return date.toLocaleString('en-US', {
         year: 'numeric',
         month: 'short',
@@ -98,7 +94,7 @@ export default function MessageManager() {
         minute: '2-digit',
       });
     } catch (error) {
-      console.error('Error formatting date:', error, 'Date string:', dateString);
+      console.error('Error formatting date:', error);
       return 'Invalid Date';
     }
   };
