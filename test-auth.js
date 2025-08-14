@@ -3,12 +3,13 @@ async function testAuth() {
   try {
     console.log('Testing authentication flow...');
     
-    // 1. Login first
+    // 1. Login first - Make sure to set ADMIN_PASSWORD in your .env.local
+    const adminPassword = process.env.ADMIN_PASSWORD || 'your_password_here';
     const loginResponse = await fetch('http://localhost:3001/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ password: 'adminkal' })
+      body: JSON.stringify({ password: adminPassword })
     });
     
     const loginResult = await loginResponse.json();

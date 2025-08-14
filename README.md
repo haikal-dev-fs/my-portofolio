@@ -12,7 +12,7 @@ A stunning, responsive portfolio website built with Next.js, featuring smooth an
 - **Interactive Components** with hover effects and micro-interactions
 
 ### 🛡️ Admin Panel
-- **Secure Authentication** with fixed password (`adminkal`)
+- **Secure Authentication** with environment-based password configuration
 - **Profile Management** - Edit your personal information, bio, skills, and contact details
 - **Project Management** - Add, edit, and organize your projects
 - **Real-time Updates** - Changes reflect immediately on the frontend
@@ -59,7 +59,14 @@ A stunning, responsive portfolio website built with Next.js, featuring smooth an
    npm install
    ```
 
-3. **Setup database**
+3. **Environment Configuration**
+   Create a `.env.local` file in the root directory:
+   ```bash
+   ADMIN_PASSWORD=your_secure_admin_password_here
+   DATABASE_URL=your_database_url_if_using_external_db
+   ```
+
+4. **Setup database**
    ```bash
    # Generate and apply database migrations
    npx drizzle-kit push
@@ -68,12 +75,12 @@ A stunning, responsive portfolio website built with Next.js, featuring smooth an
    npx tsx scripts/seed.ts
    ```
 
-4. **Start development server**
+5. **Start development server**
    ```bash
    npm run dev
    ```
 
-5. **Open your browser**
+6. **Open your browser**
    Navigate to `http://localhost:3000`
 
 ## 📋 Available Scripts
@@ -90,7 +97,7 @@ A stunning, responsive portfolio website built with Next.js, featuring smooth an
 
 ### Admin Panel Access
 - Navigate to `/admin`
-- Enter password: `adminkal`
+- Enter your configured admin password
 - Start editing your profile and projects
 
 ### Database Location
@@ -183,8 +190,9 @@ Change fonts in `src/app/globals.css`:
 
 ## 🔒 Security Notes
 
-- The admin password is hardcoded for simplicity
-- For production, consider implementing proper authentication
+- The admin password is configured via environment variables
+- Set `ADMIN_PASSWORD` in your `.env.local` file
+- For production, use a strong password and consider implementing proper JWT authentication
 - Use environment variables for sensitive configuration
 - Enable HTTPS in production
 
