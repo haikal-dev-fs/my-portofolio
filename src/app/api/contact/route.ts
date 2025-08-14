@@ -99,7 +99,12 @@ export async function POST(request: NextRequest) {
       { 
         success: false, 
         message: 'Failed to send message. Please try again.',
-        error: process.env.NODE_ENV === 'development' ? error instanceof Error ? error.message : 'Unknown error' : undefined
+        error: error instanceof Error ? error.message : 'Unknown error',
+        details: {
+          name: error instanceof Error ? error.name : 'Unknown',
+          code: (error as any)?.code,
+          severity: (error as any)?.severity
+        }
       },
       { status: 500 }
     );
