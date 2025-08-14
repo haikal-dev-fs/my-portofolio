@@ -1,15 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
-import db from '@/lib/db';
-import { sql } from 'drizzle-orm';
+import postgres from 'postgres';
 
 export async function POST() {
+  let sql: postgres.Sql | null = null;
+  
   try {
-    console.log('Creating messages table if not exists...');
+    console.log('Setting up database connection...');
     
-    // Create messages table using raw SQL with exact schema from drizzle
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS messages (
-        id VARCHAR(36) PRIMARY KEY,
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL is not configured');
+    }
+
+    sql = postgres(process.env.DATABASE_URL);
+
+    console.log('Dropping existing messages table...');
+    
+    // Drop table if exists
+    await sql`DROP TABLE IF EXISTS messages`;
+
+    console.log('Creating messages table with SERIAL primary key...');
+    
+    // Create messages table with SERIAL primary key
+    await sql`
+      CREATE TABLE messages (
+        id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         email VARCHAR(255) NOT NULL,
         subject VARCHAR(500) NOT NULL,
@@ -17,28 +31,19 @@ export async function POST() {
         is_read BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       )
-    `);
+    `;
 
     console.log('Messages table created successfully');
     
     // Test inserting a sample message
     try {
-      const testMessage = {
-        id: 'test-setup-id',
-        name: 'Setup Test',
-        email: 'setup@test.com',
-        subject: 'Setup Test Message',
-        message: 'This is a test message created during setup',
-        isRead: false
-      };
+      const result = await sql`
+        INSERT INTO messages (name, email, subject, message)
+        VALUES ('Setup Test', 'setup@test.com', 'Setup Test Message', 'This is a test message created during setup')
+        RETURNING id, name, email, subject, message, is_read, created_at
+      `;
       
-      await db.execute(sql`
-        INSERT INTO messages (id, name, email, subject, message, is_read, created_at)
-        VALUES (${testMessage.id}, ${testMessage.name}, ${testMessage.email}, ${testMessage.subject}, ${testMessage.message}, ${testMessage.isRead}, NOW())
-        ON CONFLICT (id) DO NOTHING
-      `);
-      
-      console.log('Test message inserted successfully');
+      console.log('Test message inserted successfully with ID:', result[0]?.id);
     } catch (insertError) {
       console.log('Insert test failed:', insertError instanceof Error ? insertError.message : 'Unknown');
     }
@@ -50,16 +55,24 @@ export async function POST() {
     });
 
   } catch (error) {
-    console.error('Error creating messages table:', error);
+    console.error('Database setup error:', error);
     
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to create messages table',
+        message: 'Database setup failed',
         error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString()
       },
       { status: 500 }
     );
+  } finally {
+    if (sql) {
+      try {
+        await sql.end();
+      } catch (closeError) {
+        console.error('Error closing database connection:', closeError);
+      }
+    }
   }
 }

@@ -1,12 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import db from '@/lib/db';
-import { messages } from '@/lib/db/schema';
-import { desc, sql } from 'drizzle-orm';
-import { createId } from '@paralleldrive/cuid2';
+import postgres from 'postgres';
 
 export async function POST(request: NextRequest) {
+  let sql: any = null;
+  
   try {
     console.log('Contact form submission started');
+    
+    // Initialize postgres connection
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) {
+      console.error('DATABASE_URL not found');
+      return NextResponse.json(
+        { success: false, message: 'Database configuration error' },
+        { status: 500 }
+      );
+    }
+
+    console.log('Initializing database connection...');
+    sql = postgres(connectionString, { ssl: 'require' });
     
     const body = await request.json();
     console.log('Request body received:', { 
@@ -37,61 +49,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('Creating messages table if not exists...');
+    
+    // Ensure table exists
+    await sql`
+      CREATE TABLE IF NOT EXISTS messages (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        subject VARCHAR(500) NOT NULL,
+        message TEXT NOT NULL,
+        is_read BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )
+    `;
+
     console.log('Attempting to insert message into database...');
     
-    // Try with raw SQL first as fallback
-    try {
-      const messageId = createId();
-      const result = await db.execute(sql`
-        INSERT INTO messages (id, name, email, subject, message, is_read, created_at)
-        VALUES (${messageId}, ${name}, ${email}, ${subject}, ${message}, false, NOW())
-        RETURNING id, name, email, subject, message, is_read, created_at
-      `);
-      
-      console.log('Message inserted successfully with raw SQL:', messageId);
-      
-      const newMessage = {
-        id: messageId,
-        name,
-        email,
-        subject,
-        message,
-        isRead: false,
-        createdAt: new Date().toISOString()
-      };
+    // Insert message
+    const result = await sql`
+      INSERT INTO messages (name, email, subject, message, is_read, created_at)
+      VALUES (${name}, ${email}, ${subject}, ${message}, false, NOW())
+      RETURNING id, name, email, subject, message, is_read, created_at
+    `;
 
-      return NextResponse.json({
-        success: true,
-        message: 'Thank you for your message! I will get back to you soon.',
-        data: newMessage
-      });
-      
-    } catch (rawSqlError) {
-      console.log('Raw SQL insert failed, trying drizzle ORM:', rawSqlError instanceof Error ? rawSqlError.message : 'Unknown');
-      
-      // Fallback to drizzle ORM
-      const newMessage = await db.insert(messages).values({
-        name,
-        email,
-        subject,
-        message,
-      }).returning();
-      
-      console.log('Message inserted successfully with drizzle:', newMessage[0]?.id);
+    console.log('Message inserted successfully:', result[0]?.id);
 
-      return NextResponse.json({
-        success: true,
-        message: 'Thank you for your message! I will get back to you soon.',
-        data: newMessage[0]
-      });
-    }
+    return NextResponse.json({
+      success: true,
+      message: 'Thank you for your message! I will get back to you soon.',
+      data: result[0]
+    });
 
   } catch (error) {
     console.error('Error saving contact message:', error);
     console.error('Error details:', {
       name: error instanceof Error ? error.name : 'Unknown',
       message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
+      code: (error as any)?.code,
+      detail: (error as any)?.detail
     });
     
     return NextResponse.json(
@@ -102,26 +98,48 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     );
+  } finally {
+    // Close connection
+    if (sql) {
+      try {
+        await sql.end();
+      } catch (closeError) {
+        console.error('Error closing database connection:', closeError);
+      }
+    }
   }
 }
 
 export async function GET(request: NextRequest) {
+  let sql: any = null;
+  
   try {
-    // This endpoint is for admin to retrieve messages
+    // Initialize postgres connection
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) {
+      return NextResponse.json(
+        { success: false, message: 'Database configuration error' },
+        { status: 500 }
+      );
+    }
+
+    sql = postgres(connectionString, { ssl: 'require' });
+    
     const url = new URL(request.url);
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '10');
     const offset = (page - 1) * limit;
 
-    const allMessages = await db
-      .select()
-      .from(messages)
-      .orderBy(desc(messages.createdAt))
-      .limit(limit)
-      .offset(offset);
+    // Get messages with pagination
+    const allMessages = await sql`
+      SELECT * FROM messages 
+      ORDER BY created_at DESC 
+      LIMIT ${limit} OFFSET ${offset}
+    `;
 
-    // Get total count for pagination
-    const totalCount = await db.select().from(messages);
+    // Get total count
+    const countResult = await sql`SELECT COUNT(*) as total FROM messages`;
+    const total = parseInt(countResult[0]?.total || '0');
 
     return NextResponse.json({
       success: true,
@@ -129,8 +147,8 @@ export async function GET(request: NextRequest) {
       pagination: {
         page,
         limit,
-        total: totalCount.length,
-        totalPages: Math.ceil(totalCount.length / limit)
+        total,
+        totalPages: Math.ceil(total / limit)
       }
     });
 
@@ -140,5 +158,14 @@ export async function GET(request: NextRequest) {
       { success: false, message: 'Failed to fetch messages' },
       { status: 500 }
     );
+  } finally {
+    // Close connection
+    if (sql) {
+      try {
+        await sql.end();
+      } catch (closeError) {
+        console.error('Error closing database connection:', closeError);
+      }
+    }
   }
 }
