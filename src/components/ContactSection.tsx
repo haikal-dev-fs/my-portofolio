@@ -52,7 +52,8 @@ const ContactSection = () => {
     setSubmitStatus('idle');
     
     try {
-      const response = await fetch('/api/contact', {
+      // Try main contact API first
+      let response = await fetch('/api/contact', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -60,7 +61,22 @@ const ContactSection = () => {
         body: JSON.stringify(formData),
       });
 
-      const result = await response.json();
+      let result = await response.json();
+
+      // If main API fails, try Supabase fallback
+      if (!result.success && response.status === 500) {
+        console.log('Main contact API failed, trying Supabase fallback...');
+        
+        response = await fetch('/api/contact-supabase', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        });
+
+        result = await response.json();
+      }
 
       if (result.success) {
         setSubmitStatus('success');
