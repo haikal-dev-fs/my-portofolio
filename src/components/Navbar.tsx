@@ -54,7 +54,7 @@ const Navbar = () => {
             : 'bg-transparent'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
             <Link href="/">
@@ -62,10 +62,10 @@ const Navbar = () => {
                 whileHover={{ scale: 1.05 }}
                 className="flex items-center gap-2 cursor-pointer"
               >
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-gold to-primary-dark-gold flex items-center justify-center font-bold text-primary-black">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-primary-gold to-primary-dark-gold flex items-center justify-center font-bold text-primary-black text-sm sm:text-base">
                   P
                 </div>
-                <span className="text-xl font-display font-bold gradient-gold">
+                <span className="text-lg sm:text-xl font-display font-bold gradient-gold">
                   Portfolio
                 </span>
               </motion.div>
@@ -124,11 +124,11 @@ const Navbar = () => {
           x: isMenuOpen ? '0%' : '100%' 
         }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
-        className={`fixed top-0 right-0 h-full w-80 bg-card border-l border-border z-40 ${
+        className={`fixed top-0 right-0 h-full w-full sm:w-80 bg-card/95 backdrop-blur-md border-l border-border z-40 ${
           isMenuOpen ? 'pointer-events-auto' : 'pointer-events-none'
         }`}
       >
-        <div className="p-6 pt-20">
+        <div className="p-4 sm:p-6 pt-16 sm:pt-20">
           <div className="space-y-4">
             {navItems.map((item, index) => (
               <motion.button

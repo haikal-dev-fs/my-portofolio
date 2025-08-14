@@ -75,23 +75,23 @@ const HeroSection = () => {
   }
 
   return (
-    <section className="min-h-screen flex items-center justify-center px-6 relative overflow-hidden bg-gradient-to-br from-background via-primary-black to-background">
+    <section className="min-h-screen flex items-center justify-center px-6 pt-24 sm:pt-20 md:pt-0 relative overflow-hidden bg-gradient-to-br from-background via-primary-black to-background">
       {/* Background Effects */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary-gold/5 via-transparent to-transparent"></div>
       
-      <div className="max-w-6xl mx-auto text-center relative z-10">
+      <div className="max-w-6xl mx-auto text-center relative z-10 px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="space-y-8"
+          className="space-y-6 sm:space-y-8"
         >
           {/* Name */}
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-5xl lg:text-7xl font-display font-bold"
+            className="text-4xl sm:text-5xl lg:text-7xl font-display font-bold"
           >
             <span className="block">Hello, I'm</span>
             <span className="gradient-gold">{profile.name}</span>
@@ -102,7 +102,7 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-2xl lg:text-4xl text-gray-300 font-light"
+            className="text-lg sm:text-2xl lg:text-4xl text-gray-300 font-light"
           >
             {profile.title}
           </motion.p>
@@ -112,7 +112,7 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.6 }}
-            className="text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed"
+            className="text-base sm:text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed px-4"
           >
             {profile.bio}
           </motion.p>
