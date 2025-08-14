@@ -155,46 +155,68 @@ export default function AdminPage() {
 
 // Admin Dashboard Component
 function AdminDashboard({ onLogout }: { onLogout: () => void }) {
-  const [activeTab, setActiveTab] = useState<'profile' | 'projects'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'projects' | 'messages'>('profile');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const tabs = [
     { id: 'profile', label: 'Profile Settings', icon: '👤' },
-    { id: 'projects', label: 'Project Management', icon: '💼' }
+    { id: 'projects', label: 'Project Management', icon: '💼' },
+    { id: 'messages', label: 'Contact Messages', icon: '💬' }
   ];
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-card border-b border-border px-6 py-4">
+      <header className="bg-card border-b border-border px-4 sm:px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-primary-gold rounded-lg flex items-center justify-center font-bold text-primary-black">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary-gold rounded-lg flex items-center justify-center font-bold text-primary-black text-sm sm:text-base">
               A
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">Admin Panel</h1>
-              <p className="text-sm text-gray-400">Portfolio Management</p>
+              <h1 className="text-lg sm:text-xl font-bold text-white">Admin Panel</h1>
+              <p className="text-xs sm:text-sm text-gray-400 hidden sm:block">Portfolio Management</p>
             </div>
           </div>
           
           <button
             onClick={onLogout}
-            className="px-4 py-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors border border-red-500/20"
+            className="px-3 py-2 sm:px-4 sm:py-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors border border-red-500/20 text-sm"
           >
             Logout
           </button>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid lg:grid-cols-4 gap-8">
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <nav className="space-y-2">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {/* Mobile Tab Navigation */}
+        <div className="lg:hidden mb-6">
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as 'profile' | 'projects' | 'messages')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap text-sm transition-colors ${
+                  activeTab === tab.id
+                    ? 'bg-primary-gold text-primary-black'
+                    : 'bg-card hover:bg-primary-gold/10 text-gray-300 hover:text-primary-gold border border-border'
+                }`}
+              >
+                <span className="text-base">{tab.icon}</span>
+                <span className="font-medium">{tab.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid lg:grid-cols-4 gap-6 lg:gap-8">
+          {/* Desktop Sidebar */}
+          <div className="hidden lg:block lg:col-span-1">
+            <nav className="space-y-2 sticky top-6">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as 'profile' | 'projects')}
+                  onClick={() => setActiveTab(tab.id as 'profile' | 'projects' | 'messages')}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
                     activeTab === tab.id
                       ? 'bg-primary-gold text-primary-black'
@@ -215,9 +237,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
+              className="w-full"
             >
               {activeTab === 'profile' && <ProfileEditor />}
               {activeTab === 'projects' && <ProjectManager />}
+              {activeTab === 'messages' && <MessageManager />}
             </motion.div>
           </div>
         </div>
@@ -1371,6 +1395,273 @@ function ProjectImageUpload({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Message Manager Component
+function MessageManager() {
+  const [messages, setMessages] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedMessage, setSelectedMessage] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  useEffect(() => {
+    fetchMessages();
+  }, [currentPage]);
+
+  const fetchMessages = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/contact?page=${currentPage}&limit=10`);
+      const data = await response.json();
+
+      if (data.success) {
+        setMessages(data.data);
+        setTotalPages(data.pagination.totalPages);
+      }
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const markAsRead = async (messageId: string, isRead: boolean) => {
+    try {
+      const response = await fetch(`/api/contact/${messageId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isRead })
+      });
+
+      if (response.ok) {
+        setMessages(prev => 
+          prev.map(msg => 
+            msg.id === messageId ? { ...msg, isRead } : msg
+          )
+        );
+        if (selectedMessage?.id === messageId) {
+          setSelectedMessage((prev: any) => ({ ...prev, isRead }));
+        }
+      }
+    } catch (error) {
+      console.error('Error updating message:', error);
+    }
+  };
+
+  const deleteMessage = async (messageId: string) => {
+    if (!confirm('Are you sure you want to delete this message?')) return;
+
+    try {
+      const response = await fetch(`/api/contact/${messageId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        setMessages(prev => prev.filter(msg => msg.id !== messageId));
+        if (selectedMessage?.id === messageId) {
+          setSelectedMessage(null);
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting message:', error);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold text-white">Contact Messages</h2>
+        <div className="grid gap-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="bg-card p-4 rounded-lg animate-pulse">
+              <div className="h-4 bg-gray-700 rounded w-1/4 mb-2"></div>
+              <div className="h-3 bg-gray-700 rounded w-1/2 mb-2"></div>
+              <div className="h-3 bg-gray-700 rounded w-3/4"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h2 className="text-2xl font-bold text-white">Contact Messages</h2>
+        <div className="flex items-center gap-2 text-sm text-gray-400">
+          Total: {messages.length} messages
+        </div>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-4 lg:gap-6">
+        {/* Messages List */}
+        <div className="space-y-3 lg:space-y-4 order-2 lg:order-1">
+          {messages.length === 0 ? (
+            <div className="text-center py-8 lg:py-12 text-gray-400">
+              <div className="text-3xl lg:text-4xl mb-4">📭</div>
+              <p className="text-sm lg:text-base">No messages yet</p>
+            </div>
+          ) : (
+            messages.map((message) => (
+              <motion.div
+                key={message.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`p-3 lg:p-4 bg-card border rounded-lg cursor-pointer transition-all hover:border-primary-gold ${
+                  selectedMessage?.id === message.id ? 'border-primary-gold' : 'border-border'
+                } ${!message.isRead ? 'bg-blue-500/5 border-blue-500/20' : ''}`}
+                onClick={() => {
+                  setSelectedMessage(message);
+                  if (!message.isRead) {
+                    markAsRead(message.id, true);
+                  }
+                }}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <h3 className="font-medium text-white text-sm lg:text-base truncate">{message.name}</h3>
+                    {!message.isRead && (
+                      <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
+                    )}
+                  </div>
+                  <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
+                    {formatDate(message.createdAt)}
+                  </span>
+                </div>
+                
+                <p className="text-xs lg:text-sm text-gray-400 mb-2 truncate">{message.email}</p>
+                <p className="text-xs lg:text-sm font-medium text-gray-300 mb-2 line-clamp-1">
+                  {message.subject}
+                </p>
+                <p className="text-xs lg:text-sm text-gray-400 line-clamp-2">
+                  {message.message}
+                </p>
+              </motion.div>
+            ))
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center gap-2 pt-4">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-2 lg:px-3 py-1 text-sm bg-card border border-border rounded disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <span className="px-2 lg:px-3 py-1 text-gray-400 text-sm">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-2 lg:px-3 py-1 text-sm bg-card border border-border rounded disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Message Detail */}
+        <div className="space-y-4 order-1 lg:order-2">
+          {selectedMessage ? (
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-card border border-border rounded-lg p-4 lg:p-6 sticky top-6"
+            >
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-4">
+                <h3 className="text-lg lg:text-xl font-bold text-white">Message Details</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => markAsRead(selectedMessage.id, !selectedMessage.isRead)}
+                    className={`px-2 lg:px-3 py-1 text-xs lg:text-sm rounded ${
+                      selectedMessage.isRead
+                        ? 'bg-gray-500/20 text-gray-400'
+                        : 'bg-blue-500/20 text-blue-400'
+                    }`}
+                  >
+                    {selectedMessage.isRead ? 'Mark Unread' : 'Mark Read'}
+                  </button>
+                  <button
+                    onClick={() => deleteMessage(selectedMessage.id)}
+                    className="px-2 lg:px-3 py-1 text-xs lg:text-sm bg-red-500/20 text-red-400 rounded hover:bg-red-500/30"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-3 lg:space-y-4">
+                <div>
+                  <label className="text-xs lg:text-sm text-gray-400">From</label>
+                  <p className="text-white font-medium text-sm lg:text-base break-words">{selectedMessage.name}</p>
+                </div>
+
+                <div>
+                  <label className="text-xs lg:text-sm text-gray-400">Email</label>
+                  <p className="text-white text-sm lg:text-base">
+                    <a 
+                      href={`mailto:${selectedMessage.email}`}
+                      className="text-primary-gold hover:underline break-all"
+                    >
+                      {selectedMessage.email}
+                    </a>
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-xs lg:text-sm text-gray-400">Subject</label>
+                  <p className="text-white font-medium text-sm lg:text-base break-words">{selectedMessage.subject}</p>
+                </div>
+
+                <div>
+                  <label className="text-xs lg:text-sm text-gray-400">Message</label>
+                  <div className="bg-background p-3 lg:p-4 rounded border border-border mt-2">
+                    <p className="text-gray-300 whitespace-pre-wrap leading-relaxed text-sm lg:text-base">
+                      {selectedMessage.message}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs lg:text-sm text-gray-400">Received</label>
+                  <p className="text-white text-sm lg:text-base">{formatDate(selectedMessage.createdAt)}</p>
+                </div>
+
+                <div className="pt-4 border-t border-border">
+                  <a
+                    href={`mailto:${selectedMessage.email}?subject=Re: ${selectedMessage.subject}`}
+                    className="inline-flex items-center gap-2 px-3 lg:px-4 py-2 bg-primary-gold text-primary-black rounded hover:bg-primary-dark-gold transition-colors text-sm lg:text-base"
+                  >
+                    📧 Reply via Email
+                  </a>
+                </div>
+              </div>
+            </motion.div>
+          ) : (
+            <div className="bg-card border border-border rounded-lg p-8 lg:p-12 text-center text-gray-400">
+              <div className="text-3xl lg:text-4xl mb-4">👈</div>
+              <p className="text-sm lg:text-base">Select a message to view details</p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
