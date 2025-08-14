@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
       success: true,
       data: {
         cvExists: true,
-        url: `/api/cv`, // URL to download CV
+        url: profile[0].resumeUrl, // Return direct URL from database
         filename: 'CV-Muhammad-Haikal.pdf'
       }
     });

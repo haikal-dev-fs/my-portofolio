@@ -20,7 +20,6 @@ const HeroSection = () => {
   useEffect(() => {
     setMounted(true);
     fetchProfile();
-    checkCV();
   }, []);
 
   const fetchProfile = async () => {
@@ -45,19 +44,6 @@ const HeroSection = () => {
     } catch (error) {
       console.error('Failed to fetch profile:', error);
       // Keep fallback data if API fails
-    }
-  };
-
-  const checkCV = async () => {
-    try {
-      const response = await fetch('/api/cv/check');
-      const data = await response.json();
-      if (data.success && data.data.cvExists) {
-        setCvUrl(data.data.url);
-      }
-    } catch (error) {
-      console.log('CV check failed:', error);
-      // Keep cvUrl as null if check fails
     }
   };
 

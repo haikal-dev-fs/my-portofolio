@@ -18,7 +18,12 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Initializing database connection...');
-    sql = postgres(connectionString, { ssl: 'require' });
+    sql = postgres(connectionString, { 
+      ssl: 'require',
+      max: 1, // Limit to 1 connection
+      idle_timeout: 20,
+      connect_timeout: 10
+    });
     
     const body = await request.json();
     console.log('Request body received:', { 
@@ -114,21 +119,52 @@ export async function GET(request: NextRequest) {
   let sql: any = null;
   
   try {
+    console.log('GET /api/contact - Starting request');
+    
     // Initialize postgres connection
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) {
+      console.error('DATABASE_URL not found in environment');
       return NextResponse.json(
         { success: false, message: 'Database configuration error' },
         { status: 500 }
       );
     }
 
-    sql = postgres(connectionString, { ssl: 'require' });
+    console.log('Creating postgres connection...');
+    sql = postgres(connectionString, { 
+      ssl: 'require',
+      max: 1, // Limit to 1 connection
+      idle_timeout: 20,
+      connect_timeout: 10
+    });
+    
+    // Ensure table exists first
+    console.log('Ensuring messages table exists...');
+    try {
+      await sql`
+        CREATE TABLE IF NOT EXISTS messages (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          email VARCHAR(255) NOT NULL,
+          subject VARCHAR(500) NOT NULL,
+          message TEXT NOT NULL,
+          is_read BOOLEAN DEFAULT FALSE,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        )
+      `;
+      console.log('Messages table ready');
+    } catch (tableError) {
+      console.error('Error creating table:', tableError);
+      throw tableError;
+    }
     
     const url = new URL(request.url);
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '10');
     const offset = (page - 1) * limit;
+
+    console.log(`Fetching messages - page: ${page}, limit: ${limit}, offset: ${offset}`);
 
     // Get messages with pagination
     const allMessages = await sql`
@@ -137,9 +173,13 @@ export async function GET(request: NextRequest) {
       LIMIT ${limit} OFFSET ${offset}
     `;
 
+    console.log(`Found ${allMessages.length} messages`);
+
     // Get total count
     const countResult = await sql`SELECT COUNT(*) as total FROM messages`;
     const total = parseInt(countResult[0]?.total || '0');
+    
+    console.log(`Total messages in database: ${total}`);
 
     return NextResponse.json({
       success: true,
@@ -154,15 +194,27 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching messages:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      code: (error as any)?.code,
+      severity: (error as any)?.severity
+    });
+    
     return NextResponse.json(
-      { success: false, message: 'Failed to fetch messages' },
+      { 
+        success: false, 
+        message: 'Failed to fetch messages',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   } finally {
     // Close connection
     if (sql) {
       try {
+        console.log('Closing database connection...');
         await sql.end();
+        console.log('Database connection closed');
       } catch (closeError) {
         console.error('Error closing database connection:', closeError);
       }
