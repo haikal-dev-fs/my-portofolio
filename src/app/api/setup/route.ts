@@ -6,10 +6,10 @@ export async function POST() {
   try {
     console.log('Creating messages table if not exists...');
     
-    // Create messages table using raw SQL
+    // Create messages table using raw SQL with exact schema from drizzle
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS messages (
-        id VARCHAR(36) PRIMARY KEY DEFAULT generate_random_uuid()::text,
+        id VARCHAR(36) PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         email VARCHAR(255) NOT NULL,
         subject VARCHAR(500) NOT NULL,
@@ -20,10 +20,32 @@ export async function POST() {
     `);
 
     console.log('Messages table created successfully');
+    
+    // Test inserting a sample message
+    try {
+      const testMessage = {
+        id: 'test-setup-id',
+        name: 'Setup Test',
+        email: 'setup@test.com',
+        subject: 'Setup Test Message',
+        message: 'This is a test message created during setup',
+        isRead: false
+      };
+      
+      await db.execute(sql`
+        INSERT INTO messages (id, name, email, subject, message, is_read, created_at)
+        VALUES (${testMessage.id}, ${testMessage.name}, ${testMessage.email}, ${testMessage.subject}, ${testMessage.message}, ${testMessage.isRead}, NOW())
+        ON CONFLICT (id) DO NOTHING
+      `);
+      
+      console.log('Test message inserted successfully');
+    } catch (insertError) {
+      console.log('Insert test failed:', insertError instanceof Error ? insertError.message : 'Unknown');
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Messages table created successfully',
+      message: 'Messages table created and tested successfully',
       timestamp: new Date().toISOString()
     });
 

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { messages } from '@/lib/db/schema';
-import { desc } from 'drizzle-orm';
+import { desc, sql } from 'drizzle-orm';
+import { createId } from '@paralleldrive/cuid2';
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,32 +39,52 @@ export async function POST(request: NextRequest) {
 
     console.log('Attempting to insert message into database...');
     
-    // Check if messages table exists and create if needed
+    // Try with raw SQL first as fallback
     try {
-      // Test table existence with a simple query
-      await db.select().from(messages).limit(1);
-      console.log('Messages table exists');
-    } catch (tableError) {
-      console.log('Messages table might not exist, error:', tableError instanceof Error ? tableError.message : 'Unknown');
-      // Re-throw the original error for now
-      throw tableError;
+      const messageId = createId();
+      const result = await db.execute(sql`
+        INSERT INTO messages (id, name, email, subject, message, is_read, created_at)
+        VALUES (${messageId}, ${name}, ${email}, ${subject}, ${message}, false, NOW())
+        RETURNING id, name, email, subject, message, is_read, created_at
+      `);
+      
+      console.log('Message inserted successfully with raw SQL:', messageId);
+      
+      const newMessage = {
+        id: messageId,
+        name,
+        email,
+        subject,
+        message,
+        isRead: false,
+        createdAt: new Date().toISOString()
+      };
+
+      return NextResponse.json({
+        success: true,
+        message: 'Thank you for your message! I will get back to you soon.',
+        data: newMessage
+      });
+      
+    } catch (rawSqlError) {
+      console.log('Raw SQL insert failed, trying drizzle ORM:', rawSqlError instanceof Error ? rawSqlError.message : 'Unknown');
+      
+      // Fallback to drizzle ORM
+      const newMessage = await db.insert(messages).values({
+        name,
+        email,
+        subject,
+        message,
+      }).returning();
+      
+      console.log('Message inserted successfully with drizzle:', newMessage[0]?.id);
+
+      return NextResponse.json({
+        success: true,
+        message: 'Thank you for your message! I will get back to you soon.',
+        data: newMessage[0]
+      });
     }
-    
-    // Insert message into database
-    const newMessage = await db.insert(messages).values({
-      name,
-      email,
-      subject,
-      message,
-    }).returning();
-
-    console.log('Message inserted successfully:', newMessage[0]?.id);
-
-    return NextResponse.json({
-      success: true,
-      message: 'Thank you for your message! I will get back to you soon.',
-      data: newMessage[0]
-    });
 
   } catch (error) {
     console.error('Error saving contact message:', error);
