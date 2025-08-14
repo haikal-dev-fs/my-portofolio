@@ -1,51 +1,51 @@
-import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
+import { pgTable, varchar, text, timestamp, boolean, serial } from 'drizzle-orm/pg-core';
 import { createId } from '@paralleldrive/cuid2';
 
-export const profiles = sqliteTable('profiles', {
-  id: text('id').$defaultFn(() => createId()).primaryKey(),
-  name: text('name').notNull(),
-  title: text('title').notNull(),
+export const profiles = pgTable('profiles', {
+  id: varchar('id', { length: 36 }).primaryKey().default(createId()),
+  name: varchar('name', { length: 255 }).notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
   bio: text('bio').notNull(),
-  email: text('email').notNull(),
-  phone: text('phone'),
-  location: text('location'),
-  linkedinUrl: text('linkedin_url'),
-  githubUrl: text('github_url'),
-  resumeUrl: text('resume_url'),
-  avatarUrl: text('avatar_url'),
+  email: varchar('email', { length: 255 }).notNull(),
+  phone: varchar('phone', { length: 50 }),
+  location: varchar('location', { length: 255 }),
+  linkedinUrl: varchar('linkedin_url', { length: 255 }),
+  githubUrl: varchar('github_url', { length: 255 }),
+  resumeUrl: varchar('resume_url', { length: 255 }),
+  avatarUrl: varchar('avatar_url', { length: 255 }),
   skills: text('skills'), // JSON string
-  createdAt: integer('created_at').$defaultFn(() => Date.now()),
-  updatedAt: integer('updated_at').$defaultFn(() => Date.now()),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
-export const projects = sqliteTable('projects', {
-  id: text('id').$defaultFn(() => createId()).primaryKey(),
-  title: text('title').notNull(),
+export const projects = pgTable('projects', {
+  id: varchar('id', { length: 36 }).primaryKey().default(createId()),
+  title: varchar('title', { length: 255 }).notNull(),
   description: text('description').notNull(),
   longDescription: text('long_description'),
-  imageUrl: text('image_url'),
-  demoUrl: text('demo_url'),
-  githubUrl: text('github_url'),
+  imageUrl: varchar('image_url', { length: 255 }),
+  demoUrl: varchar('demo_url', { length: 255 }),
+  githubUrl: varchar('github_url', { length: 255 }),
   technologies: text('technologies'), // JSON string array
-  category: text('category').notNull().default('web'),
-  featured: integer('featured', { mode: 'boolean' }).default(false),
-  order: integer('order').default(0),
-  createdAt: integer('created_at').$defaultFn(() => Date.now()),
-  updatedAt: integer('updated_at').$defaultFn(() => Date.now()),
+  category: varchar('category', { length: 50 }).notNull().default('web'),
+  featured: boolean('featured').default(false),
+  order: serial('order'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
-export const experiences = sqliteTable('experiences', {
-  id: text('id').$defaultFn(() => createId()).primaryKey(),
-  company: text('company').notNull(),
-  position: text('position').notNull(),
+export const experiences = pgTable('experiences', {
+  id: varchar('id', { length: 36 }).primaryKey().default(createId()),
+  company: varchar('company', { length: 255 }).notNull(),
+  position: varchar('position', { length: 255 }).notNull(),
   description: text('description').notNull(),
-  startDate: text('start_date').notNull(),
-  endDate: text('end_date'),
-  location: text('location'),
+  startDate: varchar('start_date', { length: 50 }).notNull(),
+  endDate: varchar('end_date', { length: 50 }),
+  location: varchar('location', { length: 255 }),
   skills: text('skills'), // JSON string array
-  order: integer('order').default(0),
-  createdAt: integer('created_at').$defaultFn(() => Date.now()),
-  updatedAt: integer('updated_at').$defaultFn(() => Date.now()),
+  order: serial('order'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
 export type Profile = typeof profiles.$inferSelect;

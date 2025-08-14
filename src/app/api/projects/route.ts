@@ -1,21 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// Interface untuk type safety
-interface Project {
-  id: string;
-  title: string;
-  description: string;
-  longDescription?: string;
-  imageUrl?: string;
-  liveUrl: string;
-  githubUrl: string;
-  technologies: string[];
-  category?: string;
-  featured?: boolean;
-  order: number;
-  createdAt: string;
-  updatedAt: string;
-}
+import db from '@/lib/db';
+import { projects } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 // Middleware to check admin authentication
 function checkAuth(request: NextRequest) {
@@ -23,22 +9,22 @@ function checkAuth(request: NextRequest) {
   return authCookie?.value === 'authenticated';
 }
 
-// Dummy data for projects - FIX: Make structure consistent
-const defaultProjects: Project[] = [
+// Default projects for seeding
+const defaultProjects = [
   {
     id: '1',
     title: 'Fleet Management System',
     description: 'A comprehensive fleet management system for mining operations with real-time monitoring and reporting capabilities.',
     longDescription: 'A comprehensive fleet management system for mining operations with real-time monitoring and reporting capabilities.',
     imageUrl: '',
-    technologies: ['PHP', 'Laravel', 'MySQL', 'Vue.js', 'Bootstrap'],
-    liveUrl: '', // Required field
+    technologies: JSON.stringify(['PHP', 'Laravel', 'MySQL', 'Vue.js', 'Bootstrap']),
+    liveUrl: '',
     githubUrl: '',
     category: 'Full Stack',
     featured: true,
     order: 0,
-    createdAt: '2024-12-01T00:00:00.000Z',
-    updatedAt: '2024-12-01T00:00:00.000Z'
+    createdAt: new Date('2024-12-01T00:00:00.000Z'),
+    updatedAt: new Date('2024-12-01T00:00:00.000Z')
   },
   {
     id: '2',
@@ -46,14 +32,14 @@ const defaultProjects: Project[] = [
     description: 'Successfully migrated PT Polytama Propindo website to modern platform with improved functionality.',
     longDescription: 'Successfully migrated PT Polytama Propindo website to modern platform, significantly improving functionality and user experience and Worked on enhancing the performance and user interface of several websites within the company',
     imageUrl: '',
-    technologies: ['Laravel', 'PHP', 'Bootstrap', 'PostgreSQL', 'JavaScript'],
+    technologies: JSON.stringify(['Laravel', 'PHP', 'Bootstrap', 'PostgreSQL', 'JavaScript']),
     liveUrl: '',
     githubUrl: '',
     category: 'Web Development',
     featured: true,
     order: 1,
-    createdAt: '2023-09-01T00:00:00.000Z',
-    updatedAt: '2024-02-01T00:00:00.000Z'
+    createdAt: new Date('2023-09-01T00:00:00.000Z'),
+    updatedAt: new Date('2024-02-01T00:00:00.000Z')
   },
   {
     id: '3',
@@ -61,39 +47,50 @@ const defaultProjects: Project[] = [
     description: 'Modern and responsive portfolio website built with Next.js and Tailwind CSS.',
     longDescription: 'Modern and responsive portfolio website built with Next.js and Tailwind CSS with advanced animations and optimized performance.',
     imageUrl: '',
-    technologies: ['Next.js', 'React', 'Tailwind CSS', 'TypeScript'],
+    technologies: JSON.stringify(['Next.js', 'React', 'Tailwind CSS', 'TypeScript']),
     liveUrl: '',
     githubUrl: '',
     category: 'Frontend',
     featured: true,
     order: 2,
-    createdAt: '2024-08-01T00:00:00.000Z',
-    updatedAt: '2024-08-01T00:00:00.000Z'
+    createdAt: new Date('2024-08-01T00:00:00.000Z'),
+    updatedAt: new Date('2024-08-01T00:00:00.000Z')
   }
 ];
 
 export async function GET() {
   try {
-    // FIX: Always return array and ensure technologies is array
-    const processedProjects = defaultProjects.map(project => ({
-      ...project,
-      technologies: Array.isArray(project.technologies) 
-        ? project.technologies 
-        : (typeof project.technologies === 'string' 
-           ? JSON.parse(project.technologies) 
-           : [])
+    // Cek jika database kosong, seed defaultProjects (hanya yang belum ada)
+    const dbProjects = await db.select().from(projects);
+    const dbIds = new Set(dbProjects.map(p => p.id));
+    // Map defaultProjects to match DB schema (demoUrl not liveUrl)
+    const toInsert = defaultProjects.filter(p => !dbIds.has(p.id)).map(p => ({
+      ...p,
+      demoUrl: p.liveUrl || '',
+      liveUrl: undefined // remove liveUrl
     }));
-
+    if (toInsert.length > 0) {
+      await db.insert(projects).values(toInsert.map(({ liveUrl, ...rest }) => rest));
+    }
+    // Ambil data terbaru
+    const allProjects = await db.select().from(projects);
+    // Pastikan technologies dikembalikan sebagai array
+    const processedProjects = allProjects.map(project => ({
+      ...project,
+      technologies: typeof project.technologies === 'string' ? JSON.parse(project.technologies) : project.technologies,
+      imageUrl: project.imageUrl || '',
+      demoUrl: project.demoUrl || ''
+    }));
     return NextResponse.json({
       success: true,
-      data: Array.isArray(processedProjects) ? processedProjects : []
+      data: processedProjects
     });
   } catch (error) {
     console.error('Error fetching projects:', error);
     return NextResponse.json({
       success: false,
       message: 'Failed to fetch projects',
-      data: [] // Always provide empty array as fallback
+      data: []
     }, { status: 500 });
   }
 }
@@ -108,41 +105,41 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
+
     const {
       title,
       description,
       longDescription,
       imageUrl,
-      liveUrl,
+      demoUrl,
       githubUrl,
       technologies,
       category,
       featured
     } = body;
 
-    // FIX: Create project with consistent structure that matches interface
-    const newProject: Project = {
-      id: `project_${Math.random().toString(36).substr(2, 9)}`,
+    // Generate id
+    const id = `project_${Math.random().toString(36).substr(2, 9)}`;
+    const now = new Date();
+    const newProject = {
+      id,
       title: title || '',
       description: description || '',
       longDescription: longDescription || description || '',
       imageUrl: imageUrl || '',
-      liveUrl: liveUrl || '', // Required field - must be present
+      demoUrl: demoUrl || '',
       githubUrl: githubUrl || '',
-      technologies: Array.isArray(technologies) ? technologies : [],
+      technologies: JSON.stringify(Array.isArray(technologies) ? technologies : []),
       category: category || 'Other',
       featured: featured || false,
-      order: defaultProjects.length,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      order: 0,
+      createdAt: now,
+      updatedAt: now
     };
-
-    // In a real application, this would save to database
-    defaultProjects.push(newProject);
-
+    await db.insert(projects).values(newProject);
     return NextResponse.json({
       success: true,
-      data: newProject,
+      data: { ...newProject, technologies: Array.isArray(technologies) ? technologies : [] },
       message: 'Project created successfully'
     });
   } catch (error) {
@@ -170,47 +167,64 @@ export async function PUT(request: NextRequest) {
       description,
       longDescription,
       imageUrl,
-      liveUrl,
+      demoUrl,
       githubUrl,
       technologies,
       category,
       featured
     } = body;
 
-    const projectIndex = defaultProjects.findIndex(p => p.id === id);
-    if (projectIndex === -1) {
+    // Cari project di database
+    const existing = await db.select().from(projects).where(eq(projects.id, id));
+    if (!existing || existing.length === 0) {
       return NextResponse.json(
         { success: false, message: 'Project not found' },
         { status: 404 }
       );
     }
 
-    // FIX: Update project with consistent structure that matches interface
-    const updatedProject: Project = {
-      ...defaultProjects[projectIndex],
-      title: title || defaultProjects[projectIndex].title,
-      description: description || defaultProjects[projectIndex].description,
-      longDescription: longDescription || defaultProjects[projectIndex].longDescription || '',
-      imageUrl: imageUrl || defaultProjects[projectIndex].imageUrl || '',
-      liveUrl: liveUrl || defaultProjects[projectIndex].liveUrl, // Required field
-      githubUrl: githubUrl || defaultProjects[projectIndex].githubUrl,
-      technologies: Array.isArray(technologies) ? technologies : defaultProjects[projectIndex].technologies,
-      category: category || defaultProjects[projectIndex].category || 'Other',
-      featured: featured !== undefined ? featured : defaultProjects[projectIndex].featured || false,
-      updatedAt: new Date().toISOString()
+    // Pastikan technologies berupa array, jika string split, jika undefined jadi []
+    let techArr = [];
+    if (Array.isArray(technologies)) {
+      techArr = technologies;
+    } else if (typeof technologies === 'string') {
+      try {
+        techArr = JSON.parse(technologies);
+      } catch {
+        techArr = technologies.split(',').map(t => t.trim());
+      }
+    }
+
+    const now = new Date();
+    const updateData = {
+      title: title ?? existing[0].title,
+      description: description ?? existing[0].description,
+      longDescription: longDescription ?? existing[0].longDescription ?? '',
+      imageUrl: imageUrl ?? existing[0].imageUrl ?? '',
+      demoUrl: demoUrl ?? existing[0].demoUrl ?? '',
+      githubUrl: githubUrl ?? existing[0].githubUrl,
+      technologies: JSON.stringify(techArr),
+      category: category ?? existing[0].category ?? 'Other',
+      featured: featured !== undefined ? featured : existing[0].featured ?? false,
+      updatedAt: now
     };
 
-    defaultProjects[projectIndex] = updatedProject;
-
+    const updated = await db.update(projects).set(updateData).where(eq(projects.id, id)).returning();
+    if (!updated || updated.length === 0) {
+      return NextResponse.json(
+        { success: false, message: 'Failed to update project' },
+        { status: 500 }
+      );
+    }
     return NextResponse.json({
       success: true,
-      data: updatedProject,
+      data: { ...updated[0], technologies: techArr },
       message: 'Project updated successfully'
     });
   } catch (error) {
     console.error('PUT projects error:', error);
     return NextResponse.json(
-      { success: false, message: 'Failed to update project' },
+      { success: false, message: 'Failed to update project', error: String(error) },
       { status: 500 }
     );
   }

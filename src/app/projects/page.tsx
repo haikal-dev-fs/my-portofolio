@@ -229,8 +229,8 @@ export default function ProjectsPage() {
                           rel="noopener noreferrer"
                           className="flex-1 py-2 px-4 bg-primary-gold text-primary-black rounded-lg font-medium text-center hover:bg-primary-dark-gold transition-colors flex items-center justify-center gap-2"
                         >
-                          <ExternalLink className="w-4 h-4" />
-                          Demo
+                          <Eye className="w-4 h-4" />
+                          Live
                         </a>
                       )}
                       {project.githubUrl && (

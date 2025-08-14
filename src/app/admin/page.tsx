@@ -548,45 +548,35 @@ function CVUploadSection() {
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     // Validate file
     if (file.type !== 'application/pdf') {
       setMessage('Only PDF files are allowed');
       return;
     }
-
     if (file.size > 5 * 1024 * 1024) { // 5MB
       setMessage('File size must be less than 5MB');
       return;
     }
-
     setUploading(true);
     setMessage('');
-
     try {
-      const formData = new FormData();
-      formData.append('cv', file);
-
-      const response = await fetch('/api/cv', {
-        method: 'POST',
-        credentials: 'include',
-        body: formData,
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        setCurrentCV(result.data.url);
-        setMessage('CV uploaded successfully!');
-        
-        // Update profile with new CV URL
-        await updateProfileCV(result.data.url);
-      } else {
-        setMessage(result.message || 'Failed to upload CV');
-      }
-    } catch (error) {
+      // Dynamic import supaya tidak error SSR
+      const { supabase } = await import('@/lib/supabaseClient');
+      const filePath = `cv/cv-${Date.now()}.pdf`;
+      const { data, error } = await supabase.storage
+        .from('portofolio-uploads')
+        .upload(filePath, file, { upsert: true });
+      if (error) throw error;
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage.from('portofolio-uploads').getPublicUrl(filePath);
+      if (!publicUrlData || !publicUrlData.publicUrl) throw new Error('Failed to get public URL');
+      setCurrentCV(publicUrlData.publicUrl);
+      setMessage('CV uploaded successfully!');
+      // Update profile with new CV URL
+      await updateProfileCV(publicUrlData.publicUrl);
+    } catch (error: any) {
       console.error('Upload error:', error);
-      setMessage('Failed to upload CV');
+      setMessage(error.message || 'Failed to upload CV');
     } finally {
       setUploading(false);
       // Reset file input
@@ -598,11 +588,16 @@ function CVUploadSection() {
 
   const updateProfileCV = async (cvUrl: string) => {
     try {
+      // Ambil data profile terbaru
+      const res = await fetch('/api/profile');
+      const { data } = await res.json();
+      if (!data) return;
+      // Kirim semua field + resumeUrl baru
       await fetch('/api/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ resumeUrl: cvUrl }),
+        body: JSON.stringify({ ...data, resumeUrl: cvUrl }),
       });
     } catch (error) {
       console.error('Failed to update profile with CV URL:', error);
@@ -741,7 +736,7 @@ function ProjectManager() {
     title: '',
     description: '',
     longDescription: '',
-    technologies: '',
+    technologies: '', // Selalu string di state
     category: 'web',
     status: 'completed',
     demoUrl: '',
@@ -780,16 +775,23 @@ function ProjectManager() {
     try {
       const method = editingProject ? 'PUT' : 'POST';
       const url = editingProject ? '/api/projects' : '/api/projects';
-      
+
+      // Jangan ubah formData.technologies, selalu string di state
+      let techArrArray: string[] = [];
+      if (typeof formData.technologies === 'string') {
+        techArrArray = formData.technologies.split(',').map(t => t.trim()).filter(Boolean);
+      } else if (Array.isArray(formData.technologies)) {
+        techArrArray = formData.technologies;
+      }
       const payload: Record<string, any> = {
         ...formData,
-        technologies: formData.technologies.split(',').map(t => t.trim()),
+        technologies: techArrArray,
       };
-      
+
       if (editingProject) {
         payload.id = editingProject.id;
       }
-      
+
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -798,7 +800,7 @@ function ProjectManager() {
       });
 
       const result = await response.json();
-      
+
       if (response.ok && result.success) {
         fetchProjects();
         resetForm();
@@ -817,14 +819,17 @@ function ProjectManager() {
     setEditingProject(project);
     let technologiesStr = '';
     if (project.technologies) {
-      try {
-        const techArray = JSON.parse(project.technologies);
-        technologiesStr = Array.isArray(techArray) ? techArray.join(', ') : project.technologies;
-      } catch {
-        technologiesStr = project.technologies;
+      if (Array.isArray(project.technologies)) {
+        technologiesStr = project.technologies.join(', ');
+      } else if (typeof project.technologies === 'string') {
+        try {
+          const techArray = JSON.parse(project.technologies);
+          technologiesStr = Array.isArray(techArray) ? techArray.join(', ') : project.technologies;
+        } catch {
+          technologiesStr = project.technologies;
+        }
       }
     }
-    
     setFormData({
       title: project.title || '',
       description: project.description || '',
@@ -861,7 +866,7 @@ function ProjectManager() {
       title: '',
       description: '',
       longDescription: '',
-      technologies: '',
+      technologies: '', // Selalu string kosong
       category: 'web',
       status: 'completed',
       demoUrl: '',
@@ -908,7 +913,8 @@ function ProjectManager() {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => setShowForm(true)}
+          onClick={() => setShowForm(true)
+          }
           className="px-6 py-3 bg-primary-gold text-primary-black font-semibold rounded-lg hover:bg-primary-dark-gold transition-colors flex items-center gap-2"
         >
           <span className="text-lg">+</span>
@@ -1215,44 +1221,34 @@ function ProjectImageUpload({
 
   const handleFiles = async (files: FileList) => {
     if (!files || files.length === 0) return;
-
     const file = files[0];
-    
     // Validate file type
     if (!file.type.startsWith('image/')) {
       alert('Please select an image file');
       return;
     }
-
     // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
       alert('File size must be less than 5MB');
       return;
     }
-
     setIsUploading(true);
-
     try {
-      const formData = new FormData();
-      formData.append('image', file);
-      formData.append('projectId', projectId || 'temp-' + Date.now());
-
-      const response = await fetch('/api/projects/image', {
-        method: 'POST',
-        credentials: 'include',
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        onImageUploaded(data.imageUrl);
-      } else {
-        alert(data.message || 'Failed to upload image');
-      }
-    } catch (error) {
+      // Dynamic import supaya tidak error SSR
+      const { supabase } = await import('@/lib/supabaseClient');
+      const ext = file.name.split('.').pop();
+      const filePath = `projects/${projectId || 'temp'}-${Date.now()}.${ext}`;
+      const { data, error } = await supabase.storage
+        .from('portofolio-uploads')
+        .upload(filePath, file, { upsert: true });
+      if (error) throw error;
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage.from('portofolio-uploads').getPublicUrl(filePath);
+      if (!publicUrlData || !publicUrlData.publicUrl) throw new Error('Failed to get public URL');
+      onImageUploaded(publicUrlData.publicUrl);
+    } catch (error: any) {
       console.error('Upload error:', error);
-      alert('Failed to upload image');
+      alert(error.message || 'Failed to upload image');
     } finally {
       setIsUploading(false);
     }

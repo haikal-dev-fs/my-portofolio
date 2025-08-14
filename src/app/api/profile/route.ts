@@ -34,8 +34,8 @@ async function ensureProfileExists() {
         githubUrl: "https://github.com/haikal-dev-fs",
         resumeUrl: null,
         skills: JSON.stringify(["Agile/Scrum", "Team Leadership", "Risk Assessment", "React", "Next.js", "JavaScript", "Tailwind CSS", "Bootstrap CSS", "HTML", "PHP", "Laravel", "Lumen", "Swagger", "Node.js", "Python", "PostgreSQL", "MongoDB", "MySQL", "CI/CD", "Git"]),
-        createdAt: Date.now(),
-        updatedAt: Date.now()
+  createdAt: new Date(),
+  updatedAt: new Date()
       };
       
       const newProfile = await db.insert(profiles).values(defaultProfile).returning();
@@ -80,8 +80,8 @@ export async function GET() {
         githubUrl: "https://github.com/haikal-dev-fs",
         resumeUrl: null,
         skills: JSON.stringify(["Agile/Scrum", "Team Leadership", "Risk Assessment", "React", "Next.js", "JavaScript", "Tailwind CSS", "Bootstrap CSS", "HTML", "PHP", "Laravel", "Lumen", "Swagger", "Node.js", "Python", "PostgreSQL", "MongoDB", "MySQL", "CI/CD", "Git"]),
-        createdAt: Date.now(),
-        updatedAt: Date.now()
+  createdAt: new Date(),
+  updatedAt: new Date()
       };
 
       return NextResponse.json({
@@ -161,7 +161,7 @@ export async function PUT(request: NextRequest) {
       resumeUrl: resumeUrl || null,
       avatarUrl: avatarUrl || null,
       skills: typeof skills === 'string' ? skills : JSON.stringify(skills || {}),
-      updatedAt: Date.now()
+  updatedAt: new Date()
     };
 
     // Try database operations with fallback to memory storage
@@ -176,7 +176,7 @@ export async function PUT(request: NextRequest) {
         console.log('Creating new profile in database...');
         const newProfile = await db.insert(profiles).values({
           ...profileData,
-          createdAt: Date.now()
+          createdAt: new Date()
         } as any).returning();
 
         console.log('Profile created successfully:', newProfile[0]);
@@ -212,7 +212,7 @@ export async function PUT(request: NextRequest) {
       memoryProfile = {
         id: memoryProfile?.id || 'memory-1',
         ...profileData,
-        createdAt: memoryProfile?.createdAt || Date.now()
+  createdAt: memoryProfile?.createdAt || new Date()
       } as Profile;
 
       console.log('Profile stored in memory:', memoryProfile);
@@ -234,8 +234,8 @@ export async function PUT(request: NextRequest) {
         title: "Project Manager & Fullstack Engineer",
         bio: "Profile update failed, using fallback data",
         email: "mhaikalas@gmail.com",
-        updatedAt: Date.now(),
-        createdAt: Date.now()
+  updatedAt: new Date(),
+  createdAt: new Date()
       };
       
       memoryProfile = fallbackData as Profile;

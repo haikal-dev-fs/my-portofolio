@@ -61,15 +61,7 @@ const HeroSection = () => {
     }
   };
 
-  const handleDownloadCV = () => {
-    if (cvUrl) {
-      // Open CV in new tab or download directly
-      window.open(cvUrl, '_blank');
-    } else {
-      // Fallback message if no CV available
-      alert('CV tidak tersedia saat ini. Silakan hubungi saya langsung untuk CV.');
-    }
-  };
+
 
   if (!mounted) {
     return (
@@ -132,15 +124,30 @@ const HeroSection = () => {
             transition={{ duration: 0.8, delay: 0.8 }}
             className="flex flex-col sm:flex-row gap-6 justify-center items-center pt-8"
           >
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleDownloadCV}
-              className="group flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-primary-gold to-yellow-500 text-black font-semibold rounded-full transition-all duration-300 hover:shadow-lg hover:shadow-primary-gold/25"
-            >
-              <Download className="w-5 h-5 group-hover:animate-bounce" />
-              Download CV
-            </motion.button>
+            {cvUrl ? (
+              <motion.a
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                href={cvUrl}
+                download
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-primary-gold to-yellow-500 text-black font-semibold rounded-full transition-all duration-300 hover:shadow-lg hover:shadow-primary-gold/25"
+              >
+                <Download className="w-5 h-5 group-hover:animate-bounce" />
+                Download CV
+              </motion.a>
+            ) : (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => alert('CV tidak tersedia saat ini. Silakan hubungi saya langsung untuk CV.')}
+                className="group flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-primary-gold to-yellow-500 text-black font-semibold rounded-full transition-all duration-300 hover:shadow-lg hover:shadow-primary-gold/25"
+              >
+                <Download className="w-5 h-5 group-hover:animate-bounce" />
+                Download CV
+              </motion.button>
+            )}
 
             <div className="flex gap-4">
               <motion.a

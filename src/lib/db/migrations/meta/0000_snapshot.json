@@ -1,318 +1,297 @@
 {
-  "version": "6",
-  "dialect": "sqlite",
-  "id": "54f33235-21f6-43bb-8a85-644ff966cbdb",
+  "id": "b7f4e45d-9656-4d99-9f54-c6126da2617b",
   "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
   "tables": {
-    "experiences": {
+    "public.experiences": {
       "name": "experiences",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "varchar(36)",
           "primaryKey": true,
           "notNull": true,
-          "autoincrement": false
+          "default": "'kgutkc2efd1zb2mrzst84btj'"
         },
         "company": {
           "name": "company",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "position": {
           "name": "position",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "description": {
           "name": "description",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "start_date": {
           "name": "start_date",
-          "type": "text",
+          "type": "varchar(50)",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "end_date": {
           "name": "end_date",
-          "type": "text",
+          "type": "varchar(50)",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "location": {
           "name": "location",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "skills": {
           "name": "skills",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "order": {
           "name": "order",
-          "type": "integer",
+          "type": "serial",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": 0
+          "notNull": true
         },
         "created_at": {
           "name": "created_at",
-          "type": "integer",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "autoincrement": false
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "integer",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "autoincrement": false
+          "default": "now()"
         }
       },
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "profiles": {
+    "public.profiles": {
       "name": "profiles",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "varchar(36)",
           "primaryKey": true,
           "notNull": true,
-          "autoincrement": false
+          "default": "'j9mgkiinm0tbenqznp8cqw2w'"
         },
         "name": {
           "name": "name",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "title": {
           "name": "title",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "bio": {
           "name": "bio",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "email": {
           "name": "email",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "phone": {
           "name": "phone",
-          "type": "text",
+          "type": "varchar(50)",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "location": {
           "name": "location",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "linkedin_url": {
           "name": "linkedin_url",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "github_url": {
           "name": "github_url",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "resume_url": {
           "name": "resume_url",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "avatar_url": {
           "name": "avatar_url",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "skills": {
           "name": "skills",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "integer",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "autoincrement": false
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "integer",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "autoincrement": false
+          "default": "now()"
         }
       },
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "projects": {
+    "public.projects": {
       "name": "projects",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "varchar(36)",
           "primaryKey": true,
           "notNull": true,
-          "autoincrement": false
+          "default": "'obqmqljlbxazgaordzcy81tu'"
         },
         "title": {
           "name": "title",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "description": {
           "name": "description",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "long_description": {
           "name": "long_description",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "image_url": {
           "name": "image_url",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "demo_url": {
           "name": "demo_url",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "github_url": {
           "name": "github_url",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "technologies": {
           "name": "technologies",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "category": {
           "name": "category",
-          "type": "text",
+          "type": "varchar(50)",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'web'"
         },
         "featured": {
           "name": "featured",
-          "type": "integer",
+          "type": "boolean",
           "primaryKey": false,
           "notNull": false,
-          "autoincrement": false,
           "default": false
         },
         "order": {
           "name": "order",
-          "type": "integer",
+          "type": "serial",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": 0
+          "notNull": true
         },
         "created_at": {
           "name": "created_at",
-          "type": "integer",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "autoincrement": false
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "integer",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "autoincrement": false
+          "default": "now()"
         }
       },
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
   },
-  "views": {},
   "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
   "_meta": {
+    "columns": {},
     "schemas": {},
-    "tables": {},
-    "columns": {}
-  },
-  "internal": {
-    "indexes": {}
+    "tables": {}
   }
 }

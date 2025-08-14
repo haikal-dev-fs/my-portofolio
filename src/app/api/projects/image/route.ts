@@ -53,18 +53,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Convert file to base64
+    // Simpan file ke public/uploads/projects/
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const base64String = buffer.toString('base64');
-    const dataUrl = `data:${file.type};base64,${base64String}`;
+    const fs = require('fs');
+    const path = require('path');
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'projects');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    // Nama file unik pakai projectId + ekstensi
+    const ext = file.type.split('/')[1] || 'png';
+    const fileName = `${projectId}.${ext}`;
+    const filePath = path.join(uploadDir, fileName);
+    fs.writeFileSync(filePath, buffer);
+    const publicUrl = `/uploads/projects/${fileName}`;
 
-    // Update project with base64 image
+    // Update project dengan path file
     const updatedProject = await db
       .update(projects)
       .set({ 
-        imageUrl: dataUrl,
-        updatedAt: Date.now()
+        imageUrl: publicUrl,
+        updatedAt: new Date()
       })
       .where(eq(projects.id, projectId))
       .returning();
@@ -79,7 +89,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Image uploaded successfully',
-      imageUrl: dataUrl
+      imageUrl: publicUrl
     });
 
   } catch (error) {
@@ -114,7 +124,7 @@ export async function DELETE(request: NextRequest) {
       .update(projects)
       .set({ 
         imageUrl: null,
-        updatedAt: Date.now()
+  updatedAt: new Date()
       })
       .where(eq(projects.id, projectId))
       .returning();

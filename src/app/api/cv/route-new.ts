@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file size (max 3MB for base64 storage)
+    // Validate file size (max 3MB)
     if (file.size > 3 * 1024 * 1024) {
       return NextResponse.json(
         { success: false, message: 'File size must be less than 3MB' },
@@ -44,15 +44,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Convert PDF to base64
+    // Save file to public/uploads/cv/cv.pdf
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const base64String = buffer.toString('base64');
-    const dataUrl = `data:application/pdf;base64,${base64String}`;
+    const fs = require('fs');
+    const path = require('path');
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'cv');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    const filePath = path.join(uploadDir, 'cv.pdf');
+    fs.writeFileSync(filePath, buffer);
+    const publicUrl = '/uploads/cv/cv.pdf';
 
     // Get or create profile
     const existingProfile = await db.select().from(profiles).limit(1);
-    
     if (existingProfile.length === 0) {
       // Create new profile with CV
       const newProfile = await db.insert(profiles).values({
@@ -64,39 +70,36 @@ export async function POST(request: NextRequest) {
         location: "Jakarta, Indonesia",
         linkedinUrl: "https://linkedin.com/in/haikal-dev",
         githubUrl: "https://github.com/haikal-dev-fs",
-        resumeUrl: dataUrl,
+        resumeUrl: publicUrl,
         skills: JSON.stringify({
           "Management": ["Agile/Scrum", "Team Leadership", "Risk Assessment"],
           "Frontend": ["React", "Next.js", "JavaScript", "Tailwind CSS", "Bootstrap CSS", "HTML"],
           "Backend": ["PHP", "Laravel", "Lumen", "Swagger", "Node.js", "Python", "PostgreSQL", "MongoDB", "MySQL"],
           "DevOps": ["CI/CD", "Git"]
         }),
-        updatedAt: Date.now()
+        updatedAt: new Date()
       }).returning();
-
       return NextResponse.json({
         success: true,
         message: 'CV uploaded successfully',
-        data: newProfile[0]
+        data: { url: publicUrl, ...newProfile[0] }
       });
     } else {
       // Update existing profile with CV
       const updatedProfile = await db
         .update(profiles)
         .set({
-          resumeUrl: dataUrl,
-          updatedAt: Date.now()
+          resumeUrl: publicUrl,
+          updatedAt: new Date()
         })
         .where(eq(profiles.id, existingProfile[0].id))
         .returning();
-
       return NextResponse.json({
         success: true,
         message: 'CV updated successfully',
-        data: updatedProfile[0]
+        data: { url: publicUrl, ...updatedProfile[0] }
       });
     }
-
   } catch (error) {
     console.error('Error uploading CV:', error);
     return NextResponse.json(
@@ -109,26 +112,22 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   try {
     const profile = await db.select().from(profiles).limit(1);
-    
     if (profile.length === 0 || !profile[0].resumeUrl) {
       return NextResponse.json(
         { success: false, message: 'CV not found' },
         { status: 404 }
       );
     }
-
-    // Extract base64 data from data URL
-    const resumeUrl = profile[0].resumeUrl;
-    if (!resumeUrl.startsWith('data:application/pdf;base64,')) {
+    const fs = require('fs');
+    const path = require('path');
+    const filePath = path.join(process.cwd(), 'public', profile[0].resumeUrl);
+    if (!fs.existsSync(filePath)) {
       return NextResponse.json(
-        { success: false, message: 'Invalid CV format' },
-        { status: 400 }
+        { success: false, message: 'CV file not found on server' },
+        { status: 404 }
       );
     }
-
-    const base64Data = resumeUrl.split(',')[1];
-    const buffer = Buffer.from(base64Data, 'base64');
-
+    const buffer = fs.readFileSync(filePath);
     return new NextResponse(buffer, {
       headers: {
         'Content-Type': 'application/pdf',
@@ -136,7 +135,6 @@ export async function GET() {
         'Content-Length': buffer.length.toString()
       }
     });
-
   } catch (error) {
     console.error('Error downloading CV:', error);
     return NextResponse.json(
@@ -169,7 +167,7 @@ export async function DELETE(request: NextRequest) {
       .update(profiles)
       .set({
         resumeUrl: null,
-        updatedAt: Date.now()
+  updatedAt: new Date()
       })
       .where(eq(profiles.id, profile[0].id));
 

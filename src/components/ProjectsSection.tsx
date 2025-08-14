@@ -139,11 +139,9 @@ const ProjectsSection = () => {
                 <h3 className="text-xl font-bold text-white">
                   {project.title}
                 </h3>
-                
                 <p className="text-gray-400 leading-relaxed">
                   {project.description}
                 </p>
-
                 <div className="flex flex-wrap gap-2">
                   {(Array.isArray(project.technologies) ? project.technologies : []).map((tech, techIndex) => (
                     <span
@@ -154,7 +152,6 @@ const ProjectsSection = () => {
                     </span>
                   ))}
                 </div>
-
                 <div className="flex gap-4 pt-4">
                   {project.liveUrl && (
                     <a
@@ -182,6 +179,16 @@ const ProjectsSection = () => {
               </div>
             </motion.div>
           ))}
+        </div>
+
+        {/* View All Projects Link */}
+        <div className="flex justify-center mt-12">
+          <a
+            href="/projects"
+            className="inline-block px-8 py-3 rounded-full bg-primary-gold text-primary-black font-semibold text-lg shadow-lg hover:bg-primary-dark-gold transition-colors"
+          >
+            View All Projects
+          </a>
         </div>
       </div>
     </section>

@@ -10,132 +10,32 @@ function checkAuth(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  if (!checkAuth(request)) {
-    return NextResponse.json(
-      { success: false, message: 'Unauthorized' },
-      { status: 401 }
-    );
-  }
-
-  try {
-    const formData = await request.formData();
-    const file = formData.get('cv') as File;
-
-    if (!file) {
-      return NextResponse.json(
-        { success: false, message: 'No file uploaded' },
-        { status: 400 }
-      );
-    }
-
-    // Validate file type (only PDF)
-    if (file.type !== 'application/pdf') {
-      return NextResponse.json(
-        { success: false, message: 'Only PDF files are allowed' },
-        { status: 400 }
-      );
-    }
-
-    // Validate file size (max 3MB for base64 storage)
-    if (file.size > 3 * 1024 * 1024) {
-      return NextResponse.json(
-        { success: false, message: 'File size must be less than 3MB' },
-        { status: 400 }
-      );
-    }
-
-    // Convert PDF to base64
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const base64String = buffer.toString('base64');
-    const dataUrl = `data:application/pdf;base64,${base64String}`;
-
-    try {
-      // Get or create profile
-      const existingProfile = await db.select().from(profiles).limit(1);
-      
-      if (existingProfile.length === 0) {
-        // Create new profile with CV
-        const newProfile = await db.insert(profiles).values({
-          name: "Muhammad Haikal",
-          title: "Project Manager & Fullstack Engineer",
-          bio: "Bridging the gap between technical excellence and project success.",
-          email: "mhaikalas@gmail.com",
-          phone: "+62 8231 8979 805",
-          location: "Jakarta, Indonesia",
-          linkedinUrl: "https://www.linkedin.com/in/haikal-alfandi-61836922a/",
-          githubUrl: "https://github.com/haikal-dev-fs",
-          resumeUrl: dataUrl,
-          skills: JSON.stringify(["Agile/Scrum", "Team Leadership", "Risk Assessment", "React", "Next.js", "JavaScript", "Tailwind CSS", "Bootstrap CSS", "HTML", "PHP", "Laravel", "Lumen", "Swagger", "Node.js", "Python", "PostgreSQL", "MongoDB", "MySQL", "CI/CD", "Git"]),
-          updatedAt: Date.now()
-        }).returning();
-
-        return NextResponse.json({
-          success: true,
-          message: 'CV uploaded successfully',
-          data: { url: '/api/cv', ...newProfile[0] }
-        });
-      } else {
-        // Update existing profile with CV
-        const updatedProfile = await db
-          .update(profiles)
-          .set({
-            resumeUrl: dataUrl,
-            updatedAt: Date.now()
-          })
-          .where(eq(profiles.id, existingProfile[0].id))
-          .returning();
-
-        return NextResponse.json({
-          success: true,
-          message: 'CV updated successfully',
-          data: { url: '/api/cv', ...updatedProfile[0] }
-        });
-      }
-    } catch (dbError) {
-      console.error('Database error in CV upload:', dbError);
-      // Log the specific error for debugging
-      console.error('Error details:', String(dbError));
-      
-      return NextResponse.json({
-        success: false,
-        message: 'Database error occurred. Please try again.',
-        error: String(dbError)
-      }, { status: 500 });
-    }
-
-  } catch (error) {
-    console.error('Error uploading CV:', error);
-    return NextResponse.json(
-      { success: false, message: 'Failed to upload CV', error: String(error) },
-      { status: 500 }
-    );
-  }
+  // This endpoint is deprecated. Use Supabase Storage and /api/profile for upload/update resumeUrl.
+  return NextResponse.json({
+    success: false,
+    message: 'Upload CV via Supabase Storage and update /api/profile instead.'
+  }, { status: 400 });
 }
 
 export async function GET() {
   try {
     const profile = await db.select().from(profiles).limit(1);
-    
     if (profile.length === 0 || !profile[0].resumeUrl) {
       return NextResponse.json(
         { success: false, message: 'CV not found' },
         { status: 404 }
       );
     }
-
-    // Extract base64 data from data URL
-    const resumeUrl = profile[0].resumeUrl;
-    if (!resumeUrl.startsWith('data:application/pdf;base64,')) {
+    const fs = require('fs');
+    const path = require('path');
+    const filePath = path.join(process.cwd(), 'public', profile[0].resumeUrl);
+    if (!fs.existsSync(filePath)) {
       return NextResponse.json(
-        { success: false, message: 'Invalid CV format' },
-        { status: 400 }
+        { success: false, message: 'CV file not found on server' },
+        { status: 404 }
       );
     }
-
-    const base64Data = resumeUrl.split(',')[1];
-    const buffer = Buffer.from(base64Data, 'base64');
-
+    const buffer = fs.readFileSync(filePath);
     return new NextResponse(buffer, {
       headers: {
         'Content-Type': 'application/pdf',
@@ -143,7 +43,6 @@ export async function GET() {
         'Content-Length': buffer.length.toString()
       }
     });
-
   } catch (error) {
     console.error('Error downloading CV:', error);
     return NextResponse.json(
@@ -176,7 +75,7 @@ export async function DELETE(request: NextRequest) {
       .update(profiles)
       .set({
         resumeUrl: null,
-        updatedAt: Date.now()
+  updatedAt: new Date()
       })
       .where(eq(profiles.id, profile[0].id));
 
