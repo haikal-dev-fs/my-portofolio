@@ -3,7 +3,22 @@ async function testAuth() {
   try {
     console.log('Testing authentication flow...');
     
-    // 1. Login first - Make sure to set ADMIN_PASSWORD in your .env.local
+    // 1. Test with adminkal (correct password)
+    const testResponse = await fetch('http://localhost:3001/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: 'adminkal' })
+    });
+    
+    const testResult = await testResponse.json();
+    console.log('Test auth result:', testResult);
+    
+    if (testResult.success) {
+      console.log('✅ Authentication successful with adminkal!');
+      return;
+    }
+    
+    // 2. Login with env password
     const adminPassword = process.env.ADMIN_PASSWORD || 'your_password_here';
     const loginResponse = await fetch('http://localhost:3001/api/auth', {
       method: 'POST',
@@ -13,7 +28,7 @@ async function testAuth() {
     });
     
     const loginResult = await loginResponse.json();
-    console.log('Login result:', loginResult);
+    console.log('Env auth result:', loginResult);
     
     if (!loginResult.success) {
       console.error('Login failed:', loginResult.message);
