@@ -1547,7 +1547,7 @@ function MessageManager() {
                     )}
                   </div>
                   <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
-                    {formatDate(message.createdAt)}
+                    {message.created_at ? formatDate(message.created_at) : 'N/A'}
                   </span>
                 </div>
                 
@@ -1650,7 +1650,7 @@ function MessageManager() {
 
                 <div>
                   <label className="text-xs lg:text-sm text-gray-400">Received</label>
-                  <p className="text-white text-sm lg:text-base">{formatDate(selectedMessage.createdAt)}</p>
+                  <p className="text-white text-sm lg:text-base">{formatDate(selectedMessage.created_at)}</p>
                 </div>
 
                 <div className="pt-4 border-t border-border">
