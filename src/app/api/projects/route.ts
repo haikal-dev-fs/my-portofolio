@@ -249,15 +249,15 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const projectIndex = defaultProjects.findIndex(p => p.id === id);
-    if (projectIndex === -1) {
+    // Delete from database
+    const deleted = await db.delete(projects).where(eq(projects.id, id)).returning();
+
+    if (!deleted || deleted.length === 0) {
       return NextResponse.json(
         { success: false, message: 'Project not found' },
         { status: 404 }
       );
     }
-
-    defaultProjects.splice(projectIndex, 1);
 
     return NextResponse.json({
       success: true,
